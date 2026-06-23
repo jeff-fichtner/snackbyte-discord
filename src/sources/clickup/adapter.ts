@@ -6,18 +6,21 @@
  * parsing. Then parses a verified body into a canonical event. The hub core never
  * imports this directly; it is wired in through the source registry.
  */
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { createHash } from 'node:crypto';
+import { createHmac, createHash, timingSafeEqual } from 'node:crypto';
 import type { SourceAdapter, CanonicalEvent, VerifyContext } from '../types.js';
 
 const SLUG = 'clickup';
 
-/** Constant-time compare of two hex strings of equal expected length. */
-function safeEqualHex(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+/**
+ * Constant-time compare of two strings. To avoid leaking length information (an
+ * early length-mismatch return is itself a timing side channel), both inputs are first
+ * reduced to fixed-size SHA-256 digests, then compared with timingSafeEqual over equal
+ * lengths. Mismatched inputs differ in their digest, matching inputs share it.
+ */
+function safeEqual(a: string, b: string): boolean {
+  const ha = createHash('sha256').update(a).digest();
+  const hb = createHash('sha256').update(b).digest();
+  return timingSafeEqual(ha, hb);
 }
 
 function headerValue(headers: VerifyContext['headers'], name: string): string | undefined {
@@ -33,7 +36,7 @@ export const clickupAdapter: SourceAdapter = {
     const provided = headerValue(ctx.headers, 'x-signature');
     if (!provided) return false;
     const expected = createHmac('sha256', ctx.secret).update(ctx.rawBody).digest('hex');
-    return safeEqualHex(provided, expected);
+    return safeEqual(provided, expected);
   },
 
   parse(rawBody: Buffer): CanonicalEvent[] {

@@ -1,8 +1,7 @@
 # Operations — snackbyte-discord
 
 Durable operational reference for running, deploying, and managing the Discord integration
-hub. (This is the permanent home for ops knowledge; the transient spin-up notes live in
-`MORNING.md` and are deleted once setup is complete.)
+hub.
 
 ## Environments
 

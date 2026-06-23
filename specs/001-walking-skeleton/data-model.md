@@ -54,7 +54,10 @@ The operator-editable routing table — the primary thing operators add and stri
 | `priority`   | `int`         | NOT NULL DEFAULT 0. Tie-break/order when several routes match (fan-out is still to all). |
 | `created_at` | `timestamptz` | NOT NULL DEFAULT now().                                              |
 
-Index (hot lookup path): `CREATE INDEX ON routes (source, event_type) WHERE enabled;`
+Indexes:
+
+- Hot lookup path: `CREATE INDEX ON routes (source, event_type) WHERE enabled;`
+- Natural-key uniqueness (added in migration `0003`): `CREATE UNIQUE INDEX ON routes (source, event_type, target_id);` — a source's event maps to a given target at most once, so re-running the seed is idempotent and accidental duplicate fan-out is prevented.
 
 ### `delivery_log`
 
@@ -72,8 +75,12 @@ Audit trail and de-duplication ledger. One row per (route, event) delivery attem
 | `error`       | `text`        | NULL. Redacted reason on failure.                                  |
 | `created_at`  | `timestamptz` | NOT NULL DEFAULT now().                                            |
 
-**Idempotency constraint**: `UNIQUE (route_id, dedupe_key)`. A second attempt for the same
-(route, event) short-circuits to a `skipped` outcome rather than re-posting (FR-013).
+**Idempotency constraint** (partial, refined in migration `0002`): `UNIQUE (route_id,
+dedupe_key) WHERE status = 'ok'`. Scoping it to `ok` keeps the real guarantee — a given event
+is delivered to a given route at most once — while letting `skipped` and `failed` audit rows
+coexist for the same key. A second attempt for an already-delivered (route, event) is recorded
+as `skipped` rather than re-posting (FR-013); the partial index is what lets that skip row
+persist instead of colliding with the `ok` row.
 
 ## In-memory types (not persisted)
 

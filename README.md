@@ -1,6 +1,9 @@
 # snackbyte-discord
 
-Vite + React + TypeScript app, deployed to Google Cloud Run.
+A Discord integration hub: receives webhooks from external services (ClickUp, with more to
+come), routes them through an operator-editable table to Discord channels, and runs an
+always-on Discord bot — one TypeScript/Node service on Google Cloud Run. Operational guide:
+[docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ## Develop
 
