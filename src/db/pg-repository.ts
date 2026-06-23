@@ -4,11 +4,21 @@
  * per event (no cache) so operator edits take effect on the next event with no restart.
  */
 import type { Pool } from 'pg';
-import type { Repository, DeliveryRecordInput } from './repository.js';
+import type { Repository, DeliveryRecordInput, SourceRecord } from './repository.js';
 import type { RouteRecord, DeliveryTarget } from '../routing/types.js';
 
 export class PgRepository implements Repository {
   constructor(private readonly pool: Pool) {}
+
+  async getSourceRecord(slug: string): Promise<SourceRecord | null> {
+    const { rows } = await this.pool.query(
+      `SELECT slug, enabled, secret_ref FROM sources WHERE slug = $1`,
+      [slug],
+    );
+    const r = rows[0];
+    if (!r) return null;
+    return { slug: r.slug, enabled: r.enabled, secretRef: r.secret_ref };
+  }
 
   async findEnabledRoutes(source: string, eventType: string): Promise<RouteRecord[]> {
     const { rows } = await this.pool.query(

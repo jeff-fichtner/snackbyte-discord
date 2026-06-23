@@ -38,6 +38,9 @@ class FakeRepo implements Repository {
   delivered = new Set<string>(); // routeId:dedupeKey that are "ok"
   records: DeliveryRecordInput[] = [];
 
+  async getSourceRecord() {
+    return { slug: 'clickup', enabled: true, secretRef: 'clickup_webhook_secret' };
+  }
   async findEnabledRoutes(): Promise<RouteRecord[]> {
     return this.routes;
   }

@@ -29,13 +29,28 @@ export async function receiveWebhook(req: Request, res: Response): Promise<void>
     throw new UnknownSourceError();
   }
 
-  // The raw body is captured by express.raw on /webhooks/* (see routes/index.ts).
-  const rawBody: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
-  const secret = adapter.slug === 'clickup' ? resolveSecret('clickup_webhook_secret') : undefined;
-  if (!secret) {
-    // Missing signing secret config is an operator error, not a sender error.
+  // The routing store holds each source's enablement and its signing-secret reference, so
+  // it must be reachable before we can verify. No context (DB down/unwired) → fail closed.
+  const ctx = getContext();
+  if (!ctx) {
+    throw new DependencyUnavailableError();
+  }
+
+  // Look up the source row: its secret_ref drives verification (no source name is hardcoded
+  // here — adding a source needs no edit to this route), and its enabled flag is a kill-switch.
+  const source = await ctx.repo.getSourceRecord(slug);
+  if (!source || !source.enabled || !source.secretRef) {
+    // Source not registered/enabled/configured in the store — operator-side, not a sender
+    // error; tell the sender to retry rather than leaking which case it was.
     throw new DependencyUnavailableError('source not configured');
   }
+  const secret = resolveSecret(source.secretRef);
+  if (!secret) {
+    throw new DependencyUnavailableError('source secret not configured');
+  }
+
+  // The raw body is captured by express.raw on /webhooks/* (see routes/index.ts).
+  const rawBody: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
 
   const ok = await adapter.verify({ rawBody, headers: req.headers, secret });
   if (!ok) {
@@ -47,12 +62,6 @@ export async function receiveWebhook(req: Request, res: Response): Promise<void>
     events = await adapter.parse(rawBody, req.headers);
   } catch (err) {
     throw new BadPayloadError(err instanceof Error ? err.message : 'invalid payload');
-  }
-
-  const ctx = getContext();
-  if (!ctx) {
-    // No runtime services wired (e.g. DB unavailable at boot) — tell the sender to retry.
-    throw new DependencyUnavailableError();
   }
 
   // Acknowledge immediately; dispatch asynchronously. Idempotency guards sender retries.

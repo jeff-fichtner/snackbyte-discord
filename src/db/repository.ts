@@ -6,6 +6,14 @@
  */
 import type { RouteRecord, DeliveryTarget } from '../routing/types.js';
 
+/** A registered inbound source row (operational enablement + secret reference). */
+export interface SourceRecord {
+  slug: string;
+  enabled: boolean;
+  /** Reference name of the signing secret (resolved to a value at runtime), or null. */
+  secretRef: string | null;
+}
+
 export interface DeliveryRecordInput {
   routeId: string;
   source: string;
@@ -17,6 +25,8 @@ export interface DeliveryRecordInput {
 }
 
 export interface Repository {
+  /** Fetch a source row by slug (for enablement + its secret reference), or null. */
+  getSourceRecord(slug: string): Promise<SourceRecord | null>;
   /** Enabled routes whose source + exact event type match (fan-out: may return many). */
   findEnabledRoutes(source: string, eventType: string): Promise<RouteRecord[]>;
   /** Resolve a delivery target by id (or null if missing/disabled). */

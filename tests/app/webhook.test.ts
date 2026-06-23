@@ -29,6 +29,14 @@ beforeAll(() => {
 // Minimal fakes so the route can dispatch without a real DB/Discord.
 class FakeRepo implements Repository {
   routes: RouteRecord[] = [];
+  async getSourceRecord(slug: string) {
+    // The clickup source is registered, enabled, and its secret_ref names the env var
+    // the test sets (CLICKUP_WEBHOOK_SECRET).
+    if (slug === 'clickup') {
+      return { slug, enabled: true, secretRef: 'clickup_webhook_secret' };
+    }
+    return null;
+  }
   async findEnabledRoutes(): Promise<RouteRecord[]> {
     return this.routes;
   }

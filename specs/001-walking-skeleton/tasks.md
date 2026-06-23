@@ -218,3 +218,14 @@ build US3 to get `/ping` responding, then return to US1+US2 for the webhook path
 - Verify tests fail before implementing.
 - Commit after each task or logical group.
 - Shipped code states rules in its own terms — never cite FRs/specs/principles (Principle V).
+
+---
+
+## Phase 7: Convergence
+
+Appended by `/speckit-converge` after assessing the implemented code against spec/plan/
+constitution. Root cause is shared between the two items: the inbound route hardcodes the
+ClickUp secret reference instead of taking it from the source's `secret_ref`.
+
+- [x] T046 CRITICAL Make the inbound webhook route source-agnostic per Constitution I (contradicts): remove the `adapter.slug === 'clickup'` branch in `src/routes/webhooks.ts` (line ~34) that resolves the signing secret. Core code must not name a specific source — adding a second source must not require editing this route. **Done:** `webhooks.ts` looks up the source row and uses its `secret_ref`; no source name appears in the route.
+- [x] T047 Resolve each source's signing secret from its `sources.secret_ref` per FR-002 / data-model `sources.secret_ref` (partial): add a repository lookup (e.g. `getSource(slug) -> { secretRef }`) or carry `secretRef` on the registered adapter, then have `src/routes/webhooks.ts` resolve the secret via `resolveSecret(source.secret_ref)`. This wires the currently-unread `secret_ref` column into the verify path and removes the hardcoded literal. **Done:** added `Repository.getSourceRecord` (+ pg impl); the route resolves `resolveSecret(source.secretRef)` and also honors the source `enabled` kill-switch.
