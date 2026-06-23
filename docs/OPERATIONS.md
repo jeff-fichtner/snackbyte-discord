@@ -69,12 +69,28 @@ curl -s https://discord.snackbyte.dev/api/version   # staging (cold-start if min
 
 The app reads config from environment variables; **secret values never live in the database**
 (rows hold reference _names_; `src/config.ts#resolveSecret` maps a name → env var) **and never
-in git**. Set/rotate them on the service:
+in git**.
+
+**Set or rotate secrets with the helper script** — it reads a local env file and pushes the
+recognized keys to the right service without ever echoing values:
+
+```bash
+./scripts/set-secrets.sh prod        # reads .env         -> snackbyte-discord
+./scripts/set-secrets.sh staging     # reads .env.staging -> snackbyte-discord-staging
+```
+
+Per-environment isolation: prod reads `.env`, staging reads `.env.staging` (gitignored) — so
+the two environments can hold different bot tokens/apps, databases, etc. To rotate one secret
+(e.g. the Discord bot token after a Reset Token): update its line in the env file, run the
+script for that environment, then check `/api/ready`.
+
+Manual equivalent (if you prefer not to use the script) — note the `^|^` delimiter, needed
+because values like `DATABASE_URL` contain commas/colons:
 
 ```bash
 gcloud run services update snackbyte-discord \
   --project snackbyte-apps --region us-central1 \
-  --update-env-vars DISCORD_BOT_TOKEN=...,DISCORD_APP_ID=...,DISCORD_DEV_GUILD_ID=...,DATABASE_URL=...,CLICKUP_WEBHOOK_SECRET=...,DEMO_CHANNEL_WEBHOOK=...
+  --update-env-vars "^|^DISCORD_BOT_TOKEN=...|DATABASE_URL=...|CLICKUP_WEBHOOK_SECRET=..."
 ```
 
 Required names are documented in `.env.example`. Hardening upgrade: store each in Google
