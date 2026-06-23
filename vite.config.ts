@@ -44,7 +44,7 @@ export default defineConfig({
     // environment (e.g. server integration tests) declare `// @vitest-environment node`
     // at the top of the file.
     environment: 'jsdom',
-    include: ['tests/app/**/*.test.ts', 'tests/app/**/*.test.tsx'],
+    include: ['tests/app/**/*.test.ts', 'tests/app/**/*.test.tsx', 'tests/machinery/**/*.test.ts'],
     root: fileURLToPath(new URL('.', import.meta.url)),
     globals: true,
     // Integration tests build into the shared dist/ and bind fixed ports, so test

@@ -1,8 +1,21 @@
 # Architecture Document — Discord Integration Hub
 
+> ⚠️ **TEMPORARY — REMOVE WHEN DONE.** This document is transitional scaffolding: the
+> design input that seeds the Spec Kit artifacts under `specs/`. It is **not** a permanent
+> shipped doc. **Delete it once its content has been absorbed into the spec artifacts**
+> (spec.md / plan.md / data-model.md / contracts/ across the relevant `specs/NNN-*`
+> features) — at the latest, once the walking skeleton and bot-depth features are spec'd and
+> planned. After that, the durable design record lives in `specs/` (and decision rationale in
+> spec/research artifacts); keeping this root doc would duplicate that and drift out of sync,
+> and a standalone `ARCHITECTURE.md` is a template-era fingerprint the shipped repo should not
+> carry. Until then it remains the single source for design intent. **Removal checklist:**
+> (1) every section's content is reflected in a `specs/` artifact; (2) no open question in §12
+> is still unresolved-and-unrecorded elsewhere; (3) nothing in `src/`, `tests/`, `README.md`,
+> or CI references this file.
+
 **Project:** `snackbyte-discord` — a Discord _integration hub_ (inbound webhooks + outbound posts + gateway bot), broader than "webhooks." Discord-centric by design; a future Slack/other-platform hub would be a separate codebase (e.g. `snackbyte-slack`), sharing only the generic canonical-event + routing core.
-**Status:** Architecture / pre-spec. This document is the intended input to **GitHub Spec Kit** (`/speckit-constitution` → `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`).
-**Base:** spun up from `snackbyte-base` (TypeScript · Vite · React · Express · Cloud Run · Vitest), governed by its constitution v2.0.0.
+**Status:** TEMPORARY architecture / pre-spec scaffolding (see removal banner above). This document is the intended input to **GitHub Spec Kit** (`/speckit-constitution` → `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`).
+**Base:** spun up from `snackbyte-base` (TypeScript · Vite · React · Express · Cloud Run · Vitest), used as the template precedent. Governed by the standalone **snackbyte-discord Constitution v1.0.0** (`.specify/memory/constitution.md`), not by the template's own constitution.
 **Date:** 2026-06-22.
 
 > **How to read this (Spec Kit mapping).** Sections are partitioned to map onto Spec Kit's phases:
@@ -12,7 +25,7 @@
 > - **§11** → _tasks/milestones_ spine.
 >   A spec author should be able to lift requirements from §1/§9/§10 into `spec.md`, and architecture/data-model from §2–§8 into `plan.md` + `data-model.md` + `contracts/`.
 
-> **Constitution compliance note (Principle VIII — "Speckit Stays in Speckit Spaces").** This document uses **named requirements** (e.g. "signature verification is mandatory"), never FR-numbers, so the Spec Kit author assigns identifiers without them leaking into shipped `src/`/`README.md`/`docs/`. Shipped code comments must describe behavior in terms of the code itself, never cite specs.
+> **Constitution compliance note (Principle V — "Speckit Stays in Speckit Spaces").** This document uses **named requirements** (e.g. "signature verification is mandatory"), never FR-numbers, so the Spec Kit author assigns identifiers without them leaking into shipped `src/`/`README.md`/`docs/`. Shipped code comments must describe behavior in terms of the code itself, never cite specs.
 
 ---
 
@@ -45,7 +58,7 @@ The architecture's job is to **establish the patterns** — adapter interface, c
 - **Patterns over instances.** ClickUp/GitHub/commands are _instances_ of a pattern, never special cases in core.
 - **Runtime-mutable routing, compile-time-safe logic.** Routing/enablement in DB (no deploy to change); verification/parsing/transform/command logic in code (typed, tested, reviewed).
 - **One always-on process, one container, one entrypoint.** §2.4.
-- **Self-contained shipped artifact** (constitution VIII): spec scaffolding stays in `specs/` and `.specify/`; shipped files don't cite it.
+- **Self-contained shipped artifact** (constitution Principle V): spec scaffolding stays in `specs/` and `.specify/`; shipped files don't cite it.
 - **App, not template.** This is a _spun-up app_ from snackbyte-base, so domain logic lives here legitimately — constitution Principle III ("skeleton only") governs the _template_, not its spun-up apps.
 
 ---
@@ -253,6 +266,35 @@ export interface EventHandler<K extends keyof ClientEvents = keyof ClientEvents>
 - **Intents & permissions (least privilege):** enable only the gateway intents the registered handlers need. **Message Content is privileged** (portal opt-in; Discord verification past 100 guilds) → message-content features must be **optional and isolated**; the bot boots/functions with it OFF. Derive the required intent set from registered handlers so it doesn't silently drift. OAuth invite grants only needed permissions (manage roles, etc.).
 - Example handlers as instances of the pattern: `guildMemberAdd` (welcome/auto-role), `messageReactionAdd` (reaction-role/moderation), `interactionCreate` (command router).
 
+#### Interaction surface is itself an extension axis (one-stop-shop)
+
+The bot must be able to expose a capability through **any** Discord interaction style, not just
+slash commands — slash commands, text-prefix commands (`!role`), message components
+(buttons / select menus), context menus (user / message), modals, and reaction-driven actions —
+and remain open to styles Discord adds later. Command style is therefore **not** a fixed choice;
+it is a pluggable axis, the same way inbound sources are. The same capability (e.g. self-assign a
+role) can be offered through several styles at once, all delegating to one shared piece of logic.
+
+Concretely, the bot layers a small set of **interaction-handler registries** over the gateway, one
+per style, each populated by drop-in self-registering modules and dispatched generically from the
+relevant gateway event:
+
+- slash / chat-input commands → dispatched from `interactionCreate` (shown above)
+- text-prefix commands → dispatched from `messageCreate` (requires the privileged Message Content
+  intent, so this style stays **optional and isolated** per the intents rule above — the bot boots
+  and all other styles work with it OFF)
+- message components (buttons, selects) → dispatched from `interactionCreate` by `customId`
+- context-menu commands (user / message) → registered alongside slash commands, dispatched from
+  `interactionCreate`
+- modals → dispatched from `interactionCreate` by `customId`
+- reaction actions → dispatched from `messageReactionAdd` / `messageReactionRemove`
+
+The shared rule (Principle I, Patterns Over Instances): **a capability is logic; an interaction
+style is an adapter onto that logic.** Adding a new style = add one registry + one dispatch binding;
+adding a new capability = add one module and register it under whichever style(s) should expose it.
+Core never enumerates styles or capabilities in a switch statement. Phase 1 ships only the
+slash-command path; the registries for the other styles arrive with the features that need them.
+
 ---
 
 ## 4. Data Model
@@ -294,7 +336,7 @@ snackbyte-discord/
 ├── scripts/
 │   ├── dev.mjs                    # base dev runner; also spawns the bootstrap (Express + bot)
 │   └── deploy-commands.mjs        # push slash-command defs (guild in dev, global in prod)
-├── specs/  .specify/  .claude/    # Spec Kit scaffolding — NOT shipped logic (constitution VIII)
+├── specs/  .specify/  .claude/    # Spec Kit scaffolding — NOT shipped logic (constitution Principle V)
 ├── src/
 │   ├── main.ts                    # ★ UNIFIED BOOTSTRAP: Express.listen + bot.login + lifecycle (container CMD)
 │   ├── server.ts                  # createApp(): Express; registerRoutes(app) — no listen here
@@ -354,13 +396,33 @@ snackbyte-discord/
 
 ---
 
-## 10. Constitution Compliance (snackbyte-base v2.0.0)
+## 10. Constitution Compliance (snackbyte-discord v1.0.0)
 
-- **VIII — Speckit stays in Speckit spaces:** shipped `src/`/`tests/`/`README.md`/`docs/` must NOT cite FRs/specs/principles; use named rules. This doc already does. (Enforce in code review.)
-- **III — Skeleton only:** governs the _template_. This is a _spun-up app_, so domain logic lives here legitimately — do not push hub logic back into snackbyte-base.
-- **V — Cloud Run default:** satisfied (single Cloud Run service).
-- **VII — pinned/linted/typed/tested:** keep Node 24 pin, ESLint/Prettier, Vitest green on a fresh copy; new code obeys strict TS.
-- **Workflow:** follow `/speckit-constitution → specify → plan → tasks → implement`; decisions live in `specs/NNN-*/` artifacts, not shipped `docs/`. Consider whether this hub needs its own constitution (likely a thin one inheriting snackbyte-base) — §12.
+This app has its own **standalone** constitution (`.specify/memory/constitution.md`, v1.0.0,
+7 principles I–VII). The snackbyte-base template's constitution is precedent only and does not
+govern here. This design maps to the 7 principles as follows:
+
+- **I — Patterns Over Instances:** source adapters, transforms, bot commands, and event/
+  interaction handlers are self-registering modules behind registries; core never names a
+  specific source or command (§3.1, §3.4).
+- **II — Verify Before Process:** mandatory signature verification on the raw body before any
+  parse/route; least-privilege intents, Message Content optional/isolated (§3.1, §3.4).
+- **III — Idempotent, Rate-Limited Delivery:** one delivery service chokepoint; per-route
+  dedupe key; Discord rate-limit handling (§3.3).
+- **IV — Runtime-Mutable Routing, Compile-Time-Safe Logic:** routing in the DB (no deploy to
+  change); verification/parsing/transforms in typed, tested code (§3.2, §4).
+- **V — Pinned, Typed, Tested + Speckit stays in Speckit spaces:** Node 24, strict TS,
+  `check:all` green; shipped `src/`/`tests/`/`README.md`/`docs/` must NOT cite FRs/specs/
+  principles — use named rules. This doc already does. (Enforce in code review.)
+- **VI — Always-On Resilience:** single always-on Cloud Run service; liveness independent of
+  downstream; defined degradation (§2.4, §7, §9).
+- **VII — Secrets By Reference:** credentials in env/secret manager, referenced from DB rows by
+  name, never logged (§5).
+- **App, not template:** this is a spun-up app, so domain/hub logic lives here legitimately —
+  do not push it back into the snackbyte-base template.
+- **Workflow:** follow `/speckit-constitution → specify → plan → tasks → implement`; decisions
+  live in `specs/NNN-*/` artifacts, not shipped `docs/`. (The standalone constitution — once
+  open question §12.11 — now exists.)
 
 ---
 
@@ -378,6 +440,16 @@ snackbyte-discord/
 **Phase 2 — Breadth:** second source (**GitHub**, `X-Hub-Signature-256`) proving the adapter pattern; bot-REST delivery path; named transforms beyond default; per-route `config` (mentions, filters, colors); admin/diagnostics endpoint(s).
 
 **Phase 3 — Bot depth:** role/member commands, reaction-roles, moderation (Message Content opt-in, isolated), `bot_state`/kv, scheduled jobs reusing the delivery service.
+
+- **BED-BOT parity (requirement, not just an example).** The hub MUST be a superset of the
+  collaborator's self-hosted bot (`Bjarkirzz/BED-BOT`): self-assignable **roles** (toggle a role on
+  yourself), a **list** of which roles are self-assignable, self-service **nicknames** (set / reset,
+  enforcing Discord's 32-char limit), and the **whitelist safety model** (only explicitly allowed
+  roles can be self-assigned — never staff/admin). In our build the whitelist is operator-editable
+  runtime state (`bot_state`/a roles table), not a hard-coded list in source. These capabilities are
+  exposed through the interaction-handler registries (§3.4) — slash commands to start, and any other
+  style (text-prefix, components, etc.) as desired, all delegating to one shared capability. This is
+  a distinct feature spec after the walking skeleton, sequenced in this phase.
 
 **Phase 4 — Hardening/ops:** retry/backoff tuning, metrics endpoint, delivery-log retention/pruning, alerting on repeated `failed`, secret-rotation runbook, richer admin UI if the table editor outgrows its role.
 
@@ -397,7 +469,11 @@ snackbyte-discord/
 8. **Admin surface boundary.** How long does Supabase's table editor remain the only admin UI before a real authenticated admin endpoint/UI is warranted? Define the trigger.
 9. **`dedupeKey` fallback.** Body hash when no provider id — confirm acceptable (byte-identical re-fire suppressed, usually desired).
 10. **Naming — RESOLVED.** Named `snackbyte-discord` (matches the `snackbyte-` family; Discord-centric by design). A future Slack/other-platform hub would be a separate codebase (`snackbyte-slack`), sharing only the generic canonical-event + routing core — the bots stay separate (the delivery side and gateway are deeply platform-specific). Use `snackbyte-discord` for repo / Cloud Run service / subdomain identifiers.
-11. **Own constitution?** Should this hub carry a thin constitution (inheriting snackbyte-base's, adding hub-specific rules like "all Discord writes go through the delivery service") before `/speckit-specify`?
+11. **Own constitution? — RESOLVED.** This hub carries its own **standalone** constitution
+    (`.specify/memory/constitution.md`, v1.0.0, 7 principles), ratified before `/speckit-specify`.
+    It does not inherit from snackbyte-base; it restates the overlapping good conventions in this
+    app's own terms and adds the hub-specific rules (e.g. all Discord writes through the delivery
+    service = Principle III).
 
 ---
 
