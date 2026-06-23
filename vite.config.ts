@@ -2,9 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
-// SPINUP:server-only:start
 import { PORT } from './src/config';
-// SPINUP:server-only:end
 
 const webRoot = fileURLToPath(new URL('./src/web', import.meta.url));
 const distDir = fileURLToPath(new URL('./dist', import.meta.url));
@@ -32,13 +30,11 @@ export default defineConfig({
   root: webRoot,
   plugins: [react()],
   define: versionDefines,
-  // SPINUP:server-only:start
   // Forward /api calls from the dev frontend to the Express API (same-origin in
   // production), so app code can call relative /api paths in both dev and prod.
   server: {
     proxy: { '/api': `http://localhost:${PORT}` },
   },
-  // SPINUP:server-only:end
   build: {
     outDir: distDir,
     emptyOutDir: true,
@@ -48,7 +44,7 @@ export default defineConfig({
     // environment (e.g. server integration tests) declare `// @vitest-environment node`
     // at the top of the file.
     environment: 'jsdom',
-    include: ['tests/machinery/**/*.test.ts', 'tests/machinery/**/*.test.tsx'],
+    include: ['tests/app/**/*.test.ts', 'tests/app/**/*.test.tsx'],
     root: fileURLToPath(new URL('.', import.meta.url)),
     globals: true,
     // Integration tests build into the shared dist/ and bind fixed ports, so test

@@ -27,9 +27,7 @@ function run(command, args) {
 
 run(bin('vite'), []);
 
-// SPINUP:server-only:start
 run(bin('tsx'), ['watch', 'src/server.ts']);
-// SPINUP:server-only:end
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {

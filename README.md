@@ -1,44 +1,27 @@
-# snackbyte-base
+# snackbyte-discord
 
-A template for spinning up a new app fast: Vite + React + TypeScript, an Express
-server, Vitest, ESLint + Prettier, Node 24 LTS, and a one-time choice between two
-deploy modes — **static** (prerendered frontend, no API) or **server** (frontend +
-Express API). It deploys to Google Cloud Run.
+Vite + React + TypeScript app, deployed to Google Cloud Run.
 
-The template is mode-neutral. You resolve it to one mode at spin-up; from then on the
-app simply _is_ that mode, with no leftover template machinery.
+## Develop
 
-## Spin up a new app
-
-1. Create your repo from this template, then clone it. Either click **"Use this
-   template"** on GitHub, or from the CLI:
-
-   ```bash
-   gh repo create <your-app> --template jeff-fichtner/snackbyte-base --private --clone
-   ```
-
-2. **Follow [SPIN-UP.md](./SPIN-UP.md)** — it's the authoritative, step-by-step handoff
-   (install, resolve, enable CI, push). Start there.
-
-The resolve step bakes two identity choices into the source — `--mode` (static vs. an
-Express API) and `--render` (build-time HTML vs. client-side). They have no default;
-SPIN-UP.md covers choosing them. After `init` runs, the repo is a clean single-mode app
-with no template scaffolding left.
-
-3. Run it:
-
-   ```bash
-   npm run dev
-   ```
-
-That's it. After `init`, the repo is your app — `SPIN-UP.md` and this README are
-replaced, and there is no "template" left to see.
-
-## Scripts (available after spin-up)
+This app runs on Node 24 (see `.nvmrc`); confirm `node --version` prints `v24.x`
+(`nvm use` switches to it in an interactive shell).
 
 ```bash
-npm run dev          # dev server (frontend, plus API in server mode)
-npm run build        # build the distribution
+node --version   # expect v24.x
+cp .env.example .env   # local environment values (PORT, etc.)
+npm install
+npm run dev      # dev server at the URL Vite prints
+```
+
+Create the `.env` from `.env.example` as part of setup — the defaults run without it,
+but this app expects a `.env` for its local config, so set it up now rather than later.
+
+## Scripts
+
+```bash
+npm run dev          # dev server
+npm run build        # build the distribution into dist/
 npm run start        # run the built server
 npm run lint         # ESLint
 npm run format       # Prettier (write)
@@ -47,9 +30,70 @@ npm test             # Vitest
 npm run check:all    # format check + lint + typecheck + test
 ```
 
-## What this template does not include
+## Rendering
 
-- **Shared visual identity** (theme, header/footer, shared components) — distributed
-  separately as a versioned package, not baked into the template.
-- **Application logic** — the sample page and `/api/health` liveness route are
-  starting points to build on.
+Runtime-driven views render on the client. Where content is known at build time, it can be
+prerendered to real HTML so those pages ship as markup rather than an empty shell.
+
+Prerendering runs at **build** time, not in dev — so in `npm run dev` the page is the
+empty shell (`<div id="root"></div>`) that React mounts into. Run `npm run build` to see
+the prerendered markup.
+
+## CI
+
+A GitHub Action (`.github/workflows/ci-cd.yml`) gates pull requests and, on each push, runs
+the checks and **derives a version tag from git history** — `dev` → `vX.Y.Z-dev` (staging),
+`main` → `vX.Y.Z` (production). The PATCH is not stored in `package.json` (which holds only
+`MAJOR.MINOR`); CI creates and pushes the **tag only**, never a commit. The tag is the deploy
+signal.
+
+**One-time setup, before the first push:** enable
+**Settings → Actions → General → Workflow permissions → "Read and write permissions"** (so CI
+can push the tag), and set branch protection requiring the `validate (merge gate)` check. The
+first push tags on success; without write permission the checks pass but the tag step 403s.
+See [DEPLOY.md](DEPLOY.md) for the full versioning + CI/deploy model.
+
+## Deploy
+
+```bash
+./scripts/deploy.sh <service-name> <gcp-project> [region]   # builds the image and runs gcloud run deploy
+```
+
+Deploys a container to Cloud Run. Idle cost is near zero — Cloud Run scales to zero
+and bills only while handling a request.
+
+## Version
+
+The app reports its version at `/api/version` and (in non-prod) a small on-page chip. The
+server endpoint reads `APP_VERSION` / `BUILD_GIT_COMMIT` / `BUILD_DATE` from **runtime
+environment variables** — `scripts/deploy.sh` sets these, so a deployed release reports
+its true `vX.Y.Z` / commit / date at `/api/version`. Built and run locally (no deploy
+env), it self-reports `0.0.0-dev` / `commit: dev` / `environment: development` — that's
+expected, not a bug. (The frontend chip's version comes from `package.json` at build
+time; its commit/date are populated only if the build passes them as Docker build-args —
+see [DEPLOY.md](DEPLOY.md).)
+
+## Spec-driven development
+
+This project is set up for spec-driven development (GitHub Spec Kit). Nothing is
+spec'd yet — start here:
+
+1. **`/speckit-constitution`** — establish this app's principles. A few worth carrying
+   forward (they apply broadly, not just to this app):
+   - **Spec stays in spec spaces.** `specs/`, `.specify/`, `.claude/` are AI-assist
+     scaffolding. Shipped code (`src/`, `tests/`, `README`, `docs/`, scripts) must
+     stand on its own and never reference specs, FRs, or principle numbers — state the
+     rule directly instead.
+   - **Convention over configuration.** The tooling is set up and complete; don't
+     re-litigate it per feature.
+   - **Pinned, linted, type-safe, tested.** Node 24 LTS, TypeScript throughout, and
+     `npm run check:all` (format + lint + typecheck + test) green on every change.
+   - Then add principles specific to this app.
+2. **`/speckit-specify`** → **`/speckit-plan`** → **`/speckit-tasks`** →
+   **`/speckit-implement`** — one feature at a time, one branch per feature.
+   - Optional quality gates: **`/speckit-clarify`** (de-risk an ambiguous spec before
+     planning), **`/speckit-checklist`** (validate requirements after planning), and
+     **`/speckit-analyze`** (cross-artifact consistency before implementing).
+   - **`/speckit-converge`** — when implementation drifts from the plan, it reconciles
+     the built code against spec/plan/tasks and appends the remaining work so
+     `/speckit-implement` can finish it.

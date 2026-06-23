@@ -1,24 +1,12 @@
 # Validate, version, and tag — the branch selects the environment.
 #
-# Every app spun up from this template inherits this workflow. The release flow is the same
-# everywhere: GitHub-hosted, npm, a quality gate, and a git tag as the deploy signal.
-#
 #   - dev  -> staging      (tag vMAJOR.MINOR.PATCH-dev)
 #   - main -> production   (tag vMAJOR.MINOR.PATCH)
 #
-# VERSIONING — derived from tags, never committed. package.json holds only MAJOR.MINOR; the
-# PATCH is a global, monotonic build id derived from existing tags (see scripts/derive-version.sh).
-# CI creates a tag and pushes ONLY the tag — no commit, no branch push — so the two branches
-# never diverge: fast-forward, merge, and PR promotion all work, with no resync and no collisions.
-#
-# Two independent gates protect a release: a PR is blocked until `check:all` passes (enforced by
-# branch protection, not this file — see DEPLOY.md), AND `check:all` is re-run on the push and a
-# tag is created only if it passes. A failing push-side gate blocks the tag, and the deploy that
-# depends on it is skipped.
-#
-# This template ships `validate` + `version-and-tag`. The `deploy` job is per-app (it names a GCP
-# project, service account, and Workload Identity provider) — copy it in from DEPLOY.md when you
-# wire the app to its environment.
+# The version PATCH is derived from git tags, never committed: package.json holds only
+# MAJOR.MINOR, and CI creates + pushes a tag only (no commit, no branch push). A PR is
+# blocked until `npm run check:all` passes, and the gate is re-run on the push before any
+# tag is created. The deploy job is wired per environment (see DEPLOY.md).
 
 name: ci-cd
 

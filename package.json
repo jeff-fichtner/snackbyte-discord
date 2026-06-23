@@ -1,14 +1,13 @@
 {
-  "name": "snackbyte-base",
-  "version": "1.2",
+  "name": "snackbyte-discord",
+  "version": "0.1",
   "private": true,
   "type": "module",
-  "description": "Reusable skeleton for snackbyte.io subdomain apps (Vite + React + TypeScript, static/server deploy mode switch).",
+  "description": "snackbyte-discord — a snackbyte app.",
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
-    "init": "node scripts/init.mjs",
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
     "preview": "vite preview",

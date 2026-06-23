@@ -21,12 +21,6 @@ function run(command, args) {
 // Frontend build.
 run(bin('vite'), ['build']);
 
-// SPINUP:prerender-only:start
-// Prerender build-time-known content into the emitted HTML. The web tsconfig selects
-// the automatic JSX runtime so the React entries render under tsx.
-run(bin('tsx'), ['--tsconfig', 'tsconfig.web.json', 'scripts/prerender.mjs']);
-// SPINUP:prerender-only:end
-
 // Compile the server that serves the build (static apps serve files; server apps
 // also expose the API). Both modes ship this compiled server.
 run(bin('tsc'), ['-p', 'tsconfig.build.json']);
