@@ -7,7 +7,10 @@ export const pingCommand: SlashCommand = {
     .setName('ping')
     .setDescription('Check that the bot is responsive.'),
   async execute(interaction) {
+    // Defer immediately to acknowledge within Discord's 3s window (avoids "Unknown
+    // interaction" on any cold/slow path), then edit in the actual reply.
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const latency = Math.max(0, Date.now() - interaction.createdTimestamp);
-    await interaction.reply({ content: `Pong! (${latency}ms)`, flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ content: `Pong! (${latency}ms)` });
   },
 };
