@@ -1,0 +1,52 @@
+{
+  "name": "snackbyte-base",
+  "version": "1.2",
+  "private": true,
+  "type": "module",
+  "description": "Reusable skeleton for snackbyte.io subdomain apps (Vite + React + TypeScript, static/server deploy mode switch).",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "init": "node scripts/init.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "vite preview",
+    "start": "node dist/server/server.js",
+    "lint": "eslint .",
+    "format": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --write \"**/*.{ts,tsx,js,mjs,json,md,html}\"",
+    "format:check": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --check \"**/*.{ts,tsx,js,mjs,json,md,html}\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:release": "bash scripts/derive-version.test.sh",
+    "check:all": "npm run format:check && npm run lint && npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@types/supertest": "^7.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "dotenv": "^17.4.2",
+    "dotenv-expand": "^13.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
+    "jsdom": "^27.0.1",
+    "prettier": "^3.8.3",
+    "supertest": "^7.2.2",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
+    "vite": "^8.0.15",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+*.tsbuildinfo
+
+# Spec-workflow scaffolding — not shipped code, not formatted by the app gate
+.specify/
+.claude/
+specs/
+CLAUDE.md

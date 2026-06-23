@@ -1,0 +1,96 @@
+# Validate, version, and tag — the branch selects the environment.
+#
+# Every app spun up from this template inherits this workflow. The release flow is the same
+# everywhere: GitHub-hosted, npm, a quality gate, and a git tag as the deploy signal.
+#
+#   - dev  -> staging      (tag vMAJOR.MINOR.PATCH-dev)
+#   - main -> production   (tag vMAJOR.MINOR.PATCH)
+#
+# VERSIONING — derived from tags, never committed. package.json holds only MAJOR.MINOR; the
+# PATCH is a global, monotonic build id derived from existing tags (see scripts/derive-version.sh).
+# CI creates a tag and pushes ONLY the tag — no commit, no branch push — so the two branches
+# never diverge: fast-forward, merge, and PR promotion all work, with no resync and no collisions.
+#
+# Two independent gates protect a release: a PR is blocked until `check:all` passes (enforced by
+# branch protection, not this file — see DEPLOY.md), AND `check:all` is re-run on the push and a
+# tag is created only if it passes. A failing push-side gate blocks the tag, and the deploy that
+# depends on it is skipped.
+#
+# This template ships `validate` + `version-and-tag`. The `deploy` job is per-app (it names a GCP
+# project, service account, and Workload Identity provider) — copy it in from DEPLOY.md when you
+# wire the app to its environment.
+
+name: ci-cd
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+env:
+  NODE_VERSION: '24' # Node major for the gate (keep aligned with .nvmrc)
+
+jobs:
+  # Merge gate: PRs into main/dev must pass the quality gate before they can merge. (The merge
+  # is *enforced* by branch protection requiring this check — repo config, not expressible here.)
+  validate:
+    name: validate (merge gate)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # the gate only reads code — least privilege
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run check:all
+      - run: npm run test:release # also gate changes to the release tooling itself
+
+  # Push-side gate + derive the version + create the tag. Runs on push to main OR dev. The gate
+  # is mandatory and authoritative; on failure nothing is tagged and no deploy can follow.
+  version-and-tag:
+    name: version and tag
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Serialize same-branch runs so two pushes can't derive the same patch concurrently.
+    concurrency:
+      group: version-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: write # to push the TAG only (we never push a commit to the branch)
+    outputs:
+      version: ${{ steps.derive.outputs.version }} # plain number, e.g. 0.1.4
+      tag: ${{ steps.derive.outputs.tag }} # git tag, e.g. v0.1.4-dev (staging) or v0.1.4 (prod)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # A GITHUB_TOKEN-pushed tag does NOT trigger another workflow (GitHub's recursion guard),
+          # which is fine: the deploy is a chained `needs:` job in THIS run, so no second event is
+          # needed and no personal access token is required.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # full history + tags so derivation is correct (and not mis-derived shallow)
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Push-side gate (mandatory): app code must be green, and the release tooling itself must
+      # still pass its scenarios, before anything is tagged.
+      - run: npm run check:all
+      - run: npm run test:release
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Derive version and tag
+        id: derive
+        run: scripts/derive-version.sh "${GITHUB_REF_NAME}"

@@ -1,0 +1,89 @@
+# Cloud Build config for the deploy. Invoked by the per-app deploy job (see DEPLOY.md) via:
+#   gcloud builds submit --config=cloudbuild.yaml \
+#     --substitutions=TAG_NAME=vX.Y.Z,SHORT_SHA=<sha>,_SERVICE=<service> \
+#     [--substitutions=_APP_ENV=staging,_APP_IS_PRODUCTION=false]   # staging only
+#
+# The version, commit, and date are passed in (the version is the derived git tag, NOT a
+# package.json patch). Build tags + image tags keep this app's builds legible in the shared
+# Cloud Build History.
+substitutions:
+  _REGION: us-central1
+  _SERVICE: app # overridden per app to the Cloud Run service name
+  _REPO: cloud-run-source-deploy
+  _AR_HOST: us-central1-docker.pkg.dev
+  # Per-target knobs (defaults = production). A staging deploy overrides these:
+  #   _SERVICE=<service>-staging  _APP_ENV=staging  _APP_IS_PRODUCTION=false
+  # _APP_ENV is a RUNTIME var (labels the env + drives noindex); _APP_IS_PRODUCTION is a
+  # BUILD-arg (drives the version chip). The defaults leave the prod build/deploy unchanged.
+  _APP_ENV: ''
+  _APP_IS_PRODUCTION: 'true'
+
+# Build tags → filterable chips in Cloud Build History (which app / ref / commit). Critical when
+# many apps build in the same project. (Underscores aren't allowed in tag values.)
+tags:
+  - app-${_SERVICE}
+  - ref-${TAG_NAME}
+  - commit-${SHORT_SHA}
+
+steps:
+  # 1. Stamp a real UTC build timestamp (Cloud Build has no built-in date substitution).
+  - id: stamp
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args: ['-c', 'date -u +%Y-%m-%dT%H:%M:%SZ > /workspace/build_date.txt']
+
+  # 2. Build the image, forwarding version/commit/date/chip-flag as build-args. Tagged with both
+  #    vX.Y.Z-<sha> (the at-a-glance identifier in the Images column) and :latest.
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker build \
+          --build-arg=BUILD_GIT_COMMIT=${SHORT_SHA} \
+          --build-arg=BUILD_DATE="$$(cat /workspace/build_date.txt)" \
+          --build-arg=APP_IS_PRODUCTION=${_APP_IS_PRODUCTION} \
+          --build-arg=APP_VERSION=${TAG_NAME} \
+          -t ${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:${TAG_NAME}-${SHORT_SHA} \
+          -t ${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:${TAG_NAME} \
+          -t ${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest \
+          .
+
+  # 3. Push all tags to Artifact Registry.
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '--all-tags', '${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}']
+
+  # 4. Deploy to Cloud Run from the immutable vX.Y.Z-<sha> image. Runtime env vars feed
+  #    /api/version. NODE_ENV stays 'production' in BOTH environments so the real version is read;
+  #    APP_ENV is appended ONLY when non-empty, so production is never given a stray APP_ENV=.
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        ENV_VARS="NODE_ENV=production,APP_VERSION=${TAG_NAME},BUILD_GIT_COMMIT=${SHORT_SHA},BUILD_DATE=$$(cat /workspace/build_date.txt)"
+        if [ -n "${_APP_ENV}" ]; then ENV_VARS="$${ENV_VARS},APP_ENV=${_APP_ENV}"; fi
+        # --ingress locks the service to the load balancer (rejects direct *.run.app) on EVERY
+        # deploy, so a first deploy doesn't silently come up reachable on run.app. It is
+        # idempotent and always correct for an LB-fronted service. The OTHER half — the one-time
+        # `allUsers run.invoker` grant — is NOT done here (it's a per-service IAM posture, granted
+        # once at stand-up, see DEPLOY.md §"Cloud Run service — ingress AND invoker"). Without it
+        # the LB returns a Google-frontend 403; the deploy will succeed but the host 403s until
+        # the grant is applied.
+        gcloud run deploy ${_SERVICE} \
+          --image=${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:${TAG_NAME}-${SHORT_SHA} \
+          --project=${PROJECT_ID} \
+          --region=${_REGION} \
+          --ingress=internal-and-cloud-load-balancing \
+          --set-env-vars="$${ENV_VARS}"
+
+images:
+  - ${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:${TAG_NAME}-${SHORT_SHA}
+  - ${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:${TAG_NAME}
+  - ${_AR_HOST}/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
