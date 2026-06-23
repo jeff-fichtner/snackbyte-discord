@@ -9,15 +9,6 @@
  * rather than starting in a half-configured state. Secrets are never logged.
  */
 
-/** Reads a required string env var, throwing a clear error if missing/empty. */
-function required(name: string): string {
-  const value = process.env[name];
-  if (value === undefined || value.trim() === '') {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
 /** Reads an optional string env var, returning undefined when unset/empty. */
 function optional(name: string): string | undefined {
   const value = process.env[name];
@@ -41,18 +32,21 @@ export function resolveSecret(ref: string): string | undefined {
 }
 
 /**
- * Full runtime config. Call once at boot (in the bootstrap) so missing required values
- * fail fast. Kept as a function rather than top-level constants so importing config in
- * tests (which mount the app without a live bot/DB) does not force all secrets to be set.
+ * Runtime config, read from the environment.
+ *
+ * The HTTP server (liveness) must come up regardless of which secrets are present, so
+ * config does NOT fail fast on missing secret-dependent values — they are exposed as
+ * optional, and the bootstrap degrades (DB down / bot offline) when one is absent. This
+ * is what lets the service deploy and stay live before its secrets are wired in.
  */
 export function loadConfig() {
   return {
     port: PORT,
     logLevel: LOG_LEVEL,
-    discordBotToken: required('DISCORD_BOT_TOKEN'),
-    discordAppId: required('DISCORD_APP_ID'),
+    discordBotToken: optional('DISCORD_BOT_TOKEN'),
+    discordAppId: optional('DISCORD_APP_ID'),
     discordDevGuildId: optional('DISCORD_DEV_GUILD_ID'),
-    databaseUrl: required('DATABASE_URL'),
+    databaseUrl: optional('DATABASE_URL'),
   };
 }
 
