@@ -50,6 +50,12 @@ CREATE INDEX IF NOT EXISTS routes_source_event_enabled_idx
   ON routes (source, event_type)
   WHERE enabled;
 
+-- A route is uniquely identified by (source, event_type, target_id): the same event from a
+-- source maps to a given target at most once. This makes the seed below idempotent on
+-- re-run (its ON CONFLICT has a real target) and prevents accidental duplicate fan-out.
+CREATE UNIQUE INDEX IF NOT EXISTS routes_source_event_target_uniq
+  ON routes (source, event_type, target_id);
+
 -- Audit trail and de-duplication ledger. One row per (route, event) delivery outcome.
 CREATE TABLE IF NOT EXISTS delivery_log (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -90,4 +96,4 @@ INSERT INTO routes (source, event_type, target_id)
     'taskStatusUpdated',
     '00000000-0000-0000-0000-000000000001'
   )
-  ON CONFLICT DO NOTHING;
+  ON CONFLICT (source, event_type, target_id) DO NOTHING;
