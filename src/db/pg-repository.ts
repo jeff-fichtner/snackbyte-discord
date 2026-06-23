@@ -67,12 +67,15 @@ export class PgRepository implements Repository {
   }
 
   async recordDelivery(input: DeliveryRecordInput): Promise<void> {
-    // ON CONFLICT guards the unique (route_id, dedupe_key): a concurrent duplicate that
-    // races past the pre-check still cannot create a second 'ok' row.
+    // The partial unique index (route_id, dedupe_key) WHERE status='ok' guards against a
+    // second 'ok' row for the same (route, event) — so a concurrent duplicate that races
+    // past the alreadyDelivered pre-check still cannot double-deliver. The matching ON
+    // CONFLICT target lets that race be ignored, while 'skipped'/'failed' audit rows (not
+    // covered by the partial index) insert freely, keeping the delivery_log complete.
     await this.pool.query(
       `INSERT INTO delivery_log (route_id, source, event_type, dedupe_key, target_id, status, error)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (route_id, dedupe_key) DO NOTHING`,
+       ON CONFLICT (route_id, dedupe_key) WHERE status = 'ok' DO NOTHING`,
       [
         input.routeId,
         input.source,
