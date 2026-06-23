@@ -16,23 +16,10 @@
   is 503 (`db: down, gateway: down`) because the keys below aren't set yet.
 - **Nothing is broken.** It's waiting on keys.
 
-> ⚠️ **DO THIS FIRST — redeploy the fix.** A convergence pass (`/speckit-converge`) caught a
+> ✅ **Convergence fix shipped + deployed.** A convergence pass (`/speckit-converge`) caught a
 > Constitution-I violation (the webhook route hardcoded `clickup` to resolve its secret). It's
-> **fixed and pushed** (`main` @ `b5fbe1a`, CI green, tag `v0.1.3`) — but the **live Cloud Run
-> service is still the pre-fix build** (`98741aa`), because the overnight gcloud token expired
-> and reauth needs an interactive login I couldn't do. Re-auth and redeploy before running the
-> e2e tests, so you test the corrected build:
->
-> ```bash
-> gcloud auth login          # interactive (browser); pick jeff@snackbyte.io
-> gcloud run deploy snackbyte-discord --source . \
->   --project snackbyte-apps --region us-central1 \
->   --allow-unauthenticated --min-instances=1
-> ```
->
-> Confirm with `curl .../api/version` → it should report commit `b5fbe1a` (not `98741aa`).
-> (The pre-fix build is functionally fine for a single ClickUp source; the fix matters for
-> adding a _second_ source without editing core. Either way, redeploy to stay current.)
+> fixed, pushed (`main`, tag `v0.1.3`), and **redeployed live** — the service now runs commit
+> `dcce3a8` (verify: `curl .../api/version`). Nothing pending here; on to the keys below.
 
 ## What only you can do (the keys) — do these in order
 
