@@ -1,15 +1,19 @@
 import express, { type Express } from 'express';
-import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { PORT } from './config.js';
 import { registerRoutes } from './routes/index.js';
+import { errorHandler } from './core/errors.js';
 
 // The built frontend always lives in dist/ at the app root, regardless of whether
 // this file runs from source (dev) or compiled (prod), so resolve it from the
 // working directory rather than this file's location.
 const distDir = resolve(process.cwd(), 'dist');
 
-/** Builds the Express app that serves the built frontend from dist/. */
+/**
+ * Builds the Express app: API routes (health, readiness, version, inbound webhooks),
+ * the built frontend, and the central error handler. Process startup (listen) and the
+ * bot login live in the bootstrap (main.ts), so createApp() stays mountable by tests
+ * without a network port or a live gateway.
+ */
 export function createApp(): Express {
   const app = express();
 
@@ -32,12 +36,8 @@ export function createApp(): Express {
     res.sendFile('index.html', { root: distDir });
   });
 
-  return app;
-}
+  // Central error handler — registered last so it catches errors from every route above.
+  app.use(errorHandler);
 
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
-if (isMain) {
-  createApp().listen(PORT, () => {
-    console.log(`Listening on http://localhost:${PORT}`);
-  });
+  return app;
 }

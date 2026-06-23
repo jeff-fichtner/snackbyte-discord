@@ -27,7 +27,7 @@ function run(command, args) {
 
 run(bin('vite'), []);
 
-run(bin('tsx'), ['watch', 'src/server.ts']);
+run(bin('tsx'), ['watch', 'src/main.ts']);
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
