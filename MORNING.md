@@ -9,12 +9,15 @@
 
 - **Walking-skeleton feature is fully implemented** (US1 webhook pipeline + US2 runtime
   routing + US3 bot) on branch `001-walking-skeleton`, merged to `main`.
-- **Live on Cloud Run:** https://snackbyte-discord-917114118367.us-central1.run.app
-  (project `snackbyte-apps`, region `us-central1`, `min-instances=1` always-on).
+- **Live on real domains:** **prod `https://discord.snackbyte.io`** (always-on, `min-instances=1`)
+  and **staging `https://discord.snackbyte.dev`** (`min-instances=0`, toggle on to test). Shared
+  load balancer + wildcard certs; the `*.run.app` URLs are LB-only (404 by design).
 - **27 tests pass; `npm run check:all` is green.** The service boots with HTTP up and
   **degrades gracefully** with no secrets — right now `/api/health` is 200 and `/api/ready`
   is 503 (`db: down, gateway: down`) because the keys below aren't set yet.
 - **Nothing is broken.** It's waiting on keys.
+- **Ops reference:** durable runbook (deploy, staging toggle, secrets, domains, logs) is in
+  **[`docs/OPERATIONS.md`](docs/OPERATIONS.md)** — that's the permanent home; this file is transient.
 
 > ✅ **Convergence fix shipped + deployed.** A convergence pass (`/speckit-converge`) caught a
 > Constitution-I violation (the webhook route hardcoded `clickup` to resolve its secret). It's
@@ -58,7 +61,7 @@ Each external account is something I cannot create or authenticate to. Set the s
 ### 4. ClickUp (the inbound source)
 
 1. ClickUp → your Space/Workspace → **Settings → Webhooks** (or the API) → create a webhook
-   pointing at `https://snackbyte-discord-917114118367.us-central1.run.app/webhooks/clickup`.
+   pointing at `https://discord.snackbyte.io/webhooks/clickup`.
 2. Subscribe it to task events (e.g. `taskStatusUpdated` to match the seed route).
 3. Copy the webhook's **signing secret** → this is `CLICKUP_WEBHOOK_SECRET`.
 
@@ -98,7 +101,7 @@ Once the keys are in and `/api/ready` is `200`:
 1. **Bot online / `/ping`** — in Discord, run `/ping` → prompt "Pong! (Nms)" reply. Bot shows
    online. (US3)
 2. **Health/readiness** —
-   `curl https://snackbyte-discord-917114118367.us-central1.run.app/api/health` → 200;
+   `curl https://discord.snackbyte.io/api/health` → 200;
    `.../api/ready` → 200 with `db: ok, gateway: ok`.
 3. **Real ClickUp event** — change a task's status in ClickUp → within a few seconds a
    formatted message (summary + link) appears in your Discord channel. (US1)
