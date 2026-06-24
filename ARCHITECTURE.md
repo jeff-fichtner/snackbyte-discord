@@ -133,3 +133,25 @@ relevant to later phases.)
 5. **Separate Discord application per environment.** Prod and staging currently can share one bot
    app; cleaner isolation is a distinct app per environment so staging can't post to prod
    channels or collide on command registration.
+
+---
+
+## ⚠️ TODO before this file is deleted — rotate all setup-exposed tokens
+
+During the live setup/e2e session, several real credentials passed through the working
+session (e.g. when saving `.env`). Rotate ALL of them, then update the running services via
+`./scripts/set-secrets.sh prod` (and `staging`). Treat every secret touched during setup as
+exposed:
+
+- **Discord bot token** — Developer Portal → Bot → Reset Token (instantly invalidates the old
+  one), then update `.env` + push to Cloud Run.
+- **ClickUp API token** — the personal token used to create the webhook; revoke it in ClickUp
+  (it was a one-time setup tool, not needed at runtime).
+- **ClickUp webhook signing secret** — rotate if you want a clean baseline (recreate the
+  webhook to get a fresh secret, then update `CLICKUP_WEBHOOK_SECRET`).
+- **Discord channel webhook URL** (`DEMO_CHANNEL_WEBHOOK`) — regenerate the channel webhook if
+  treating it as exposed.
+- **Supabase** — rotate the database password (and any service key) if it was handled during
+  setup; update `DATABASE_URL`.
+
+Once rotated and re-pushed, confirm `/api/ready` is `ready: true` on each environment.
