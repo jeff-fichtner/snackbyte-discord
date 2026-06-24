@@ -30,4 +30,5 @@ export interface DispatchResult {
   delivered: number;
   skipped: number;
   failed: number;
+  filtered: number;
 }

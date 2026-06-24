@@ -9,6 +9,7 @@
  */
 import { childLogger } from '../core/logger.js';
 import { resolveTransform } from './transforms/registry.js';
+import { passesFilter } from './filter.js';
 import type { Repository } from '../db/repository.js';
 import type { DeliveryService } from '../discord/delivery.js';
 import type { CanonicalEvent } from '../sources/types.js';
@@ -28,6 +29,7 @@ export async function dispatch(event: CanonicalEvent, deps: EngineDeps): Promise
     delivered: 0,
     skipped: 0,
     failed: 0,
+    filtered: 0,
   };
 
   await Promise.all(
@@ -47,6 +49,21 @@ export async function dispatch(event: CanonicalEvent, deps: EngineDeps): Promise
             dedupeKey: event.dedupeKey,
             targetId: route.targetId,
             status: 'skipped',
+          });
+          return;
+        }
+
+        // Per-route filter: if the route's config excludes this event's subtype, suppress it
+        // (deliver nothing) and record a distinct 'filtered' outcome. Source-agnostic.
+        if (!passesFilter(event, route.config)) {
+          result.filtered++;
+          await deps.repo.recordDelivery({
+            routeId: route.id,
+            source: event.source,
+            eventType: event.eventType,
+            dedupeKey: event.dedupeKey,
+            targetId: route.targetId,
+            status: 'filtered',
           });
           return;
         }

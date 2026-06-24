@@ -98,10 +98,31 @@ in the service config.
 
 ## Database (routing store)
 
-PostgreSQL (Supabase). Schema + seed: `migrations/0001_init.sql`. Apply with
-`npm run migrate` (needs `DATABASE_URL`; idempotent). Operators add/strike routes by editing
-the `routes` table directly (Supabase Table Editor is the day-one admin UI) — no redeploy;
-the engine reads routes live per event.
+PostgreSQL (Supabase). Schema + seed: `migrations/0001_init.sql` and later additive migrations
+(`0002`–`0004`). Apply with `npm run migrate` (needs `DATABASE_URL`; idempotent). Operators
+add/strike routes by editing the `routes` table directly (Supabase Table Editor is the day-one
+admin UI) — no redeploy; the engine reads routes live per event.
+
+## Sources
+
+Each inbound source is a code adapter registered in `src/sources/index.ts`, plus a `sources` row
+holding its enablement and `secret_ref`. Currently registered: **ClickUp** and **GitHub**.
+
+To wire up GitHub:
+
+1. Set `GITHUB_WEBHOOK_SECRET` (env / `./scripts/set-secrets.sh`); it's referenced by a
+   `sources` row with `secret_ref = 'github_webhook_secret'`.
+2. Add the `sources` row (`github` / enabled / that `secret_ref`) and `routes` rows. Route
+   `event_type` uses a `type.action` discriminator: `pull_request.opened`,
+   `pull_request.closed`, `issues.opened`, `issues.closed`, `push` (a merged PR is
+   `pull_request.closed` with `data.merged=true`).
+3. In GitHub: add a webhook to `https://discord.snackbyte.io/webhooks/github`, content type
+   `application/json`, secret = `GITHUB_WEBHOOK_SECRET`, subscribed to the relevant events.
+
+**Per-route formatting/filtering** (the `routes.config` JSONB): `mentionRoleIds` (role ids to
+mention), `accentColor` (embed color), and `excludeSubtypes` (suppress events whose normalized
+`data.subtype` is listed — recorded as a `filtered` delivery outcome). Set `transform = 'github'`
+on a route for GitHub-styled rendering; absent/unknown falls back to the default.
 
 ## Slash commands
 

@@ -30,7 +30,7 @@ engine filter step.
 
 **Purpose**: Configuration wiring for the new source. No new dependencies.
 
-- [ ] T001 Add `GITHUB_WEBHOOK_SECRET` to `.env.example` (name only, no value) and append it to the `KEYS=( … )` array in `scripts/set-secrets.sh` (the array the script iterates to push secrets) so it ships to prod/staging.
+- [x] T001 Add `GITHUB_WEBHOOK_SECRET` to `.env.example` (name only, no value) and append it to the `KEYS=( … )` array in `scripts/set-secrets.sh` (the array the script iterates to push secrets) so it ships to prod/staging.
 
 ---
 
@@ -42,8 +42,8 @@ only by US3, but the migration + type union are foundational so the codebase is 
 
 **⚠️ CRITICAL**: Complete before the user-story phases.
 
-- [ ] T002 Create `migrations/0004_delivery_log_filtered_status.sql`: drop the existing `delivery_log` status CHECK and re-add it as `CHECK (status IN ('ok','failed','skipped','filtered'))` (additive, idempotent; the partial idempotency index `WHERE status='ok'` is unaffected). Per data-model.md.
-- [ ] T003 Extend `DeliveryRecordInput.status` in `src/db/repository.ts` to the union `'ok' | 'failed' | 'skipped' | 'filtered'` (no change needed in `src/db/pg-repository.ts` — the INSERT passes status through).
+- [x] T002 Create `migrations/0004_delivery_log_filtered_status.sql`: drop the existing `delivery_log` status CHECK and re-add it as `CHECK (status IN ('ok','failed','skipped','filtered'))` (additive, idempotent; the partial idempotency index `WHERE status='ok'` is unaffected). Per data-model.md.
+- [x] T003 Extend `DeliveryRecordInput.status` in `src/db/repository.ts` to the union `'ok' | 'failed' | 'skipped' | 'filtered'` (no change needed in `src/db/pg-repository.ts` — the INSERT passes status through).
 
 **Checkpoint**: Schema + types accept `filtered`; nothing emits it yet.
 
@@ -61,14 +61,14 @@ row; resend (same delivery id) → `skipped`; bad signature → `401`.
 
 ### Tests for User Story 1
 
-- [ ] T004 [P] [US1] Unit-test the GitHub adapter in `tests/machinery/github-adapter.test.ts`: valid `X-Hub-Signature-256` passes, tampered/missing fails (constant-time, `sha256=` prefix stripped), and `parse` yields a correct `CanonicalEvent` per mapped event — `type.action` discriminator, title, `html_url`, `X-GitHub-Delivery` dedupe key, merged-PR exposes `merged` in `data`.
-- [ ] T005 [P] [US1] Integration-test the endpoint in `tests/app/github-webhook.test.ts` (Supertest over `createApp()`): `202` signed happy path, `401` bad signature, `202` for `ping`/unmapped event and for no-matching-route, per the github inbound contract.
-- [ ] T006 [P] [US1] Source-isolation test (in `tests/app/github-webhook.test.ts` or a sibling): with both sources registered, a ClickUp request still verifies + routes and a GitHub fault does not affect it (FR-019, SC-007).
+- [x] T004 [P] [US1] Unit-test the GitHub adapter in `tests/machinery/github-adapter.test.ts`: valid `X-Hub-Signature-256` passes, tampered/missing fails (constant-time, `sha256=` prefix stripped), and `parse` yields a correct `CanonicalEvent` per mapped event — `type.action` discriminator, title, `html_url`, `X-GitHub-Delivery` dedupe key, merged-PR exposes `merged` in `data`.
+- [x] T005 [P] [US1] Integration-test the endpoint in `tests/app/github-webhook.test.ts` (Supertest over `createApp()`): `202` signed happy path, `401` bad signature, `202` for `ping`/unmapped event and for no-matching-route, per the github inbound contract.
+- [x] T006 [P] [US1] Source-isolation test (in `tests/app/github-webhook.test.ts` or a sibling): with both sources registered, a ClickUp request still verifies + routes and a GitHub fault does not affect it (FR-019, SC-007).
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Create `src/sources/github/adapter.ts`: a `SourceAdapter` (`slug='github'`) — `verify` (HMAC-SHA256 of raw body vs `X-Hub-Signature-256`, strip `sha256=`, constant-time) and `parse` (map `pull_request` opened/closed [merged via `data`], `issues` opened/closed, `push`; unmapped/ping → `[]`) → `CanonicalEvent` with `eventType = type.action`, dedupeKey = `X-GitHub-Delivery`. The adapter MUST also write a single normalized `data.subtype` string per event (the value the per-route filter matches against — see T014); initial vocabulary: `pull_request.merged` and `pull_request.unmerged` (for the two `pull_request.closed` cases), and for `push` the branch ref (e.g. `branch:main`). Events with no meaningful subtype omit it.
-- [ ] T008 [US1] Register the GitHub adapter in `src/sources/index.ts` (one `registerSource(githubAdapter)` line — the only wiring change).
+- [x] T007 [US1] Create `src/sources/github/adapter.ts`: a `SourceAdapter` (`slug='github'`) — `verify` (HMAC-SHA256 of raw body vs `X-Hub-Signature-256`, strip `sha256=`, constant-time) and `parse` (map `pull_request` opened/closed [merged via `data`], `issues` opened/closed, `push`; unmapped/ping → `[]`) → `CanonicalEvent` with `eventType = type.action`, dedupeKey = `X-GitHub-Delivery`. The adapter MUST also write a single normalized `data.subtype` string per event (the value the per-route filter matches against — see T014); initial vocabulary: `pull_request.merged` and `pull_request.unmerged` (for the two `pull_request.closed` cases), and for `push` the branch ref (e.g. `branch:main`). Events with no meaningful subtype omit it.
+- [x] T008 [US1] Register the GitHub adapter in `src/sources/index.ts` (one `registerSource(githubAdapter)` line — the only wiring change).
 
 **Checkpoint**: A real GitHub event reaches a Discord channel via a DB-driven route, deduped and
 recorded — US1 functional and independently testable. (Renders via the default transform until
@@ -87,12 +87,12 @@ still delivers in the default style.
 
 ### Tests for User Story 2
 
-- [ ] T009 [P] [US2] Unit-test the GitHub transform in `tests/machinery/github-transform.test.ts`: renders PR/issue/push canonical events into a Discord message (summary + link), reading source specifics from `CanonicalEvent.data`; and the registry returns the default for a null/unknown transform key (reuses existing `resolveTransform` behavior).
+- [x] T009 [P] [US2] Unit-test the GitHub transform in `tests/machinery/github-transform.test.ts`: renders PR/issue/push canonical events into a Discord message (summary + link), reading source specifics from `CanonicalEvent.data`; and the registry returns the default for a null/unknown transform key (reuses existing `resolveTransform` behavior).
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Create `src/routing/transforms/github.ts`: a named `Transform` rendering GitHub events (switch on `eventType`/`data`; keep `CanonicalEvent` lean — read specifics from `data`).
-- [ ] T011 [US2] Register the GitHub transform in `src/routing/transforms/index.ts` (`registerTransform('github', githubTransform)`).
+- [x] T010 [US2] Create `src/routing/transforms/github.ts`: a named `Transform` rendering GitHub events (switch on `eventType`/`data`; keep `CanonicalEvent` lean — read specifics from `data`).
+- [x] T011 [US2] Register the GitHub transform in `src/routing/transforms/index.ts` (`registerTransform('github', githubTransform)`).
 
 **Checkpoint**: GitHub routes can render GitHub-styled output via `transform='github'`; default
 fallback intact. US1 + US2 work independently.
@@ -112,15 +112,15 @@ delivers the excluded subtype.
 
 ### Tests for User Story 3
 
-- [ ] T012 [P] [US3] Unit-test the route filter in `tests/machinery/route-filter.test.ts`: `excludeSubtypes` matching a value in `CanonicalEvent.data` suppresses; empty/absent delivers; the engine records `filtered` and sends nothing on suppression (using a fake repo + delivery, as the 001 engine tests do).
-- [ ] T013 [P] [US3] Unit-test config-driven formatting in `tests/machinery/github-transform.test.ts` (extend): `mentionRoleIds` produces a mention, `accentColor` is reflected, unresolvable role id is omitted (not an error), same transform + two configs → two outputs. Also assert the no-regression guard: a render with empty/absent config is byte-identical to the pre-helper output (protects FR-008 / SC-007).
+- [x] T012 [P] [US3] Unit-test the route filter in `tests/machinery/route-filter.test.ts`: `excludeSubtypes` matching a value in `CanonicalEvent.data` suppresses; empty/absent delivers; the engine records `filtered` and sends nothing on suppression (using a fake repo + delivery, as the 001 engine tests do).
+- [x] T013 [P] [US3] Unit-test config-driven formatting in `tests/machinery/github-transform.test.ts` (extend): `mentionRoleIds` produces a mention, `accentColor` is reflected, unresolvable role id is omitted (not an error), same transform + two configs → two outputs. Also assert the no-regression guard: a render with empty/absent config is byte-identical to the pre-helper output (protects FR-008 / SC-007).
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Create `src/routing/filter.ts`: a pure function `passesFilter(event, routeConfig)` that returns false (suppress) when the event's normalized `data.subtype` (written by the adapter, see T007) is present in the route config's `excludeSubtypes` array; passes when the list is empty/absent or the event has no `subtype`. Matching is on the single `data.subtype` field — not a scan of all `data` values — so the recognized vocabulary is exactly what adapters write as `subtype`.
-- [ ] T015 [US3] Edit `src/routing/engine.ts`: before resolving the target/transform for a route, evaluate `passesFilter`; if suppressed, record a `filtered` delivery outcome and skip delivery (no Discord call), counting it distinctly in the `DispatchResult`; otherwise proceed as today. (Source-agnostic routing policy — no source-name branching.)
-- [ ] T016 [US3] Apply per-route formatting config in `src/routing/transforms/github.ts` via a small shared helper (e.g. `src/routing/transforms/format-config.ts`): read `mentionRoleIds` and `accentColor` from the route config; omit unresolvable mentions; fall back to defaults when keys are absent. The helper MUST be **opt-in / no-op on empty config** — if the default transform adopts it, an empty-config render MUST be byte-identical to today's output so existing ClickUp routes don't regress (FR-008 / SC-007).
-- [ ] T017 [US3] Add `'filtered'` to `DispatchResult` accounting in `src/routing/types.ts` + `src/routing/engine.ts` (a `filtered` counter alongside delivered/skipped/failed) so the outcome is observable in the dispatch summary and logs.
+- [x] T014 [US3] Create `src/routing/filter.ts`: a pure function `passesFilter(event, routeConfig)` that returns false (suppress) when the event's normalized `data.subtype` (written by the adapter, see T007) is present in the route config's `excludeSubtypes` array; passes when the list is empty/absent or the event has no `subtype`. Matching is on the single `data.subtype` field — not a scan of all `data` values — so the recognized vocabulary is exactly what adapters write as `subtype`.
+- [x] T015 [US3] Edit `src/routing/engine.ts`: before resolving the target/transform for a route, evaluate `passesFilter`; if suppressed, record a `filtered` delivery outcome and skip delivery (no Discord call), counting it distinctly in the `DispatchResult`; otherwise proceed as today. (Source-agnostic routing policy — no source-name branching.)
+- [x] T016 [US3] Apply per-route formatting config in `src/routing/transforms/github.ts` via a small shared helper (e.g. `src/routing/transforms/format-config.ts`): read `mentionRoleIds` and `accentColor` from the route config; omit unresolvable mentions; fall back to defaults when keys are absent. The helper MUST be **opt-in / no-op on empty config** — if the default transform adopts it, an empty-config render MUST be byte-identical to today's output so existing ClickUp routes don't regress (FR-008 / SC-007).
+- [x] T017 [US3] Add `'filtered'` to `DispatchResult` accounting in `src/routing/types.ts` + `src/routing/engine.ts` (a `filtered` counter alongside delivered/skipped/failed) so the outcome is observable in the dispatch summary and logs.
 
 **Checkpoint**: All three stories independently functional — GitHub delivers, renders per named
 transform, and tunes/filters per route with auditable `filtered` outcomes.
@@ -129,9 +129,9 @@ transform, and tunes/filters per route with auditable `filtered` outcomes.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T018 [P] Update `.env.example` comment/grouping for the GitHub secret if needed, and confirm `docs/OPERATIONS.md` mentions adding a GitHub source (secret name + webhook URL) — keep ops docs current.
-- [ ] T019 Run `npm run check:all` (format + lint + typecheck + Vitest) and resolve until green; then validate the quickstart.md scenarios (signed happy path, 401, idempotency via redeliver, source isolation, named transform, missing-transform fallback, mention/color, filter→`filtered`).
-- [ ] T020 Verify constitution posture for the diff (manual review, recorded in the PR, not in shipped code): GitHub added only via the adapter + registry (no source-name branching in core); the engine filter step is source-agnostic; secrets only by reference; `CanonicalEvent` gained no top-level fields (GitHub specifics live in `data`).
+- [x] T018 [P] Update `.env.example` comment/grouping for the GitHub secret if needed, and confirm `docs/OPERATIONS.md` mentions adding a GitHub source (secret name + webhook URL) — keep ops docs current.
+- [x] T019 Run `npm run check:all` (format + lint + typecheck + Vitest) and resolve until green; then validate the quickstart.md scenarios (signed happy path, 401, idempotency via redeliver, source isolation, named transform, missing-transform fallback, mention/color, filter→`filtered`).
+- [x] T020 Verify constitution posture for the diff (manual review, recorded in the PR, not in shipped code): GitHub added only via the adapter + registry (no source-name branching in core); the engine filter step is source-agnostic; secrets only by reference; `CanonicalEvent` gained no top-level fields (GitHub specifics live in `data`).
 
 ---
 

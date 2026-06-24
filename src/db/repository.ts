@@ -20,7 +20,7 @@ export interface DeliveryRecordInput {
   eventType: string;
   dedupeKey: string;
   targetId: string;
-  status: 'ok' | 'failed' | 'skipped';
+  status: 'ok' | 'failed' | 'skipped' | 'filtered';
   error?: string;
 }
 

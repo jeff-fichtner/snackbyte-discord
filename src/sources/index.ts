@@ -5,5 +5,7 @@
  */
 import { registerSource } from './registry.js';
 import { clickupAdapter } from './clickup/adapter.js';
+import { githubAdapter } from './github/adapter.js';
 
 registerSource(clickupAdapter);
+registerSource(githubAdapter);

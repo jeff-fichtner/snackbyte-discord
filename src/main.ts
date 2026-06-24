@@ -24,8 +24,10 @@ import { createBotClient } from './bot/client.js';
 import { bindHandlers } from './bot/events/registry.js';
 import { Events } from 'discord.js';
 
-// Side-effect imports: register every source adapter, slash command, and event handler.
+// Side-effect imports: register every source adapter, named transform, slash command, and
+// event handler.
 import './sources/index.js';
+import './routing/transforms/index.js';
 import './bot/commands/index.js';
 import './bot/events/index.js';
 
