@@ -108,7 +108,8 @@ export const githubAdapter: SourceAdapter = {
     }
 
     if (type === 'issues') {
-      const issue = asRecord(body.issues ?? body.issue);
+      // GitHub's issues event payload carries the issue under the singular `issue` key.
+      const issue = asRecord(body.issue);
       const num = issue.number;
       const issueTitle = asString(issue.title) ?? '';
       return [
