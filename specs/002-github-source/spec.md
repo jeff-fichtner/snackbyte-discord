@@ -8,6 +8,14 @@
 
 **Input**: User description: "GitHub as a second inbound source, plus the per-route formatting layer it exercises. GitHub-adapter-first proves the source-adapter pattern generalizes beyond ClickUp. Add a GitHub source (verify its signature, parse key events into the canonical event), named transforms a route can select by name so GitHub renders differently from ClickUp, and per-route config driving operator-tunable formatting (mention roles, embed color, event filtering). Reuse the existing routing engine, single delivery path, secrets-by-reference, and runtime-mutable routing. Out of scope: posting under the bot's identity, admin endpoints, and bot/interaction work."
 
+## Clarifications
+
+### Session 2026-06-23
+
+- Q: How is a filter-suppressed delivery recorded in the audit log? → A: Add a distinct `filtered` outcome value (a new status alongside ok/failed/skipped), so an operator can tell an intentional filter-suppression from a duplicate or a failure at a glance.
+- Q: How does the GitHub source express event types so operators can route per action without changing the exact-match engine? → A: A combined `type.action` discriminator (e.g. `pull_request.opened`, `pull_request.closed`, `issues.opened`, `push`); each routes as its own row via the existing exact-match lookup, keeping scale in cheap runtime-editable data rather than code.
+- Q: What is the per-route event filter's shape? → A: An exclusion list of event subtypes in the route config — listed subtypes are suppressed (recorded `filtered`); empty/absent means deliver all matched events. (Exact config key settled at planning.)
+
 ## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - GitHub activity reaches the right Discord channel (Priority: P1)
@@ -97,8 +105,8 @@ code or the selected style.
 2. **Given** a route configured with an accent color (or similar presentation setting), **When** a
    matching event arrives, **Then** the message reflects that setting.
 3. **Given** a route configured to filter out a specific event subtype, **When** an event of that
-   subtype arrives, **Then** no message is delivered for that route (and the outcome is recorded),
-   while non-filtered subtypes still deliver.
+   subtype arrives, **Then** no message is delivered for that route and the outcome is recorded as
+   `filtered`, while non-filtered subtypes still deliver.
 4. **Given** the same formatting style used by two routes with different configuration, **When**
    matching events arrive, **Then** each route's message reflects its own configuration.
 
@@ -116,7 +124,8 @@ code or the selected style.
 - **Malformed payload**: an authenticated request whose body cannot be parsed for GitHub is
   rejected as a bad request; nothing is routed.
 - **Filtered-to-empty**: when per-route filtering suppresses an event, the route delivers nothing
-  but the decision is recorded (so an operator can see it was intentionally skipped, not lost).
+  but the decision is recorded as `filtered` (so an operator can see it was intentionally
+  suppressed, not lost or duplicated).
 - **Config that references a missing role/style**: the system degrades gracefully (default style,
   mention omitted if unresolvable) rather than failing the delivery.
 - **Both sources active**: a misconfiguration or failure in one source's handling must not affect
@@ -141,8 +150,15 @@ code or the selected style.
   identifier for de-duplication, a human-readable summary, a link back to the GitHub item, and the
   time it occurred).
 - **FR-005**: The system MUST handle a defined initial set of GitHub event types (at minimum:
-  pull request opened/closed/merged, push, and issue opened/closed) and MUST accept-without-acting
-  on GitHub event types it does not handle.
+  pull request opened and closed, push, and issue opened and closed) and MUST accept-without-acting
+  on GitHub event types it does not handle. A **merged** pull request is the `pull_request.closed`
+  event with a merged indicator carried in the event data — NOT a separate `pull_request.merged`
+  discriminator (GitHub has no such action); merged-vs-unmerged is distinguished downstream via the
+  event's `subtype`/data, not by a distinct event type. Each handled event MUST be expressed as a
+  combined `type.action` discriminator (e.g. `pull_request.opened`, `pull_request.closed`,
+  `issues.opened`, `push`) so an operator routes each action as its own route via the existing
+  exact-match lookup —
+  no change to the matching engine.
 - **FR-006**: Adding GitHub MUST NOT require changes to the routing engine, the delivery path, or
   the de-duplication mechanism; GitHub MUST be an additional source registered alongside the
   existing one.
@@ -163,12 +179,14 @@ code or the selected style.
 - **FR-011**: The system MUST let each route carry operator-editable configuration that adjusts
   presentation (at minimum: mentioning one or more roles, and an accent/color setting) without
   requiring a new style or code change.
-- **FR-012**: The system MUST let a route's configuration filter which events it delivers (e.g.
-  exclude specific event subtypes), so an authenticated, routed event can be intentionally
-  suppressed for that route.
+- **FR-012**: The system MUST let a route's configuration filter which events it delivers via an
+  **exclusion list of event subtypes** in the route's config (an event whose subtype is listed is
+  suppressed for that route); an empty or absent list means "deliver everything that matched the
+  route." So an authenticated, routed event can be intentionally suppressed for that route while
+  other subtypes still deliver. (The exact config key/shape is settled at planning.)
 - **FR-013**: When per-route configuration suppresses an event, the system MUST deliver nothing for
-  that route and MUST record the outcome (distinguishable from a failure or a duplicate) so it is
-  auditable.
+  that route and MUST record the outcome as a distinct `filtered` status (separate from
+  succeeded, failed, and skipped-as-duplicate) so the suppression is auditable and unambiguous.
 - **FR-014**: The same named style MUST be reusable across many routes, each with its own
   configuration, so configuration — not new code — accounts for per-route variation.
 - **FR-015**: Configuration changes MUST take effect at runtime for subsequent events (no restart
@@ -181,8 +199,9 @@ code or the selected style.
   one place.
 - **FR-017**: A given GitHub event delivered to a given route MUST result in at most one message,
   even if the event is received multiple times.
-- **FR-018**: The system MUST record the outcome of each GitHub delivery attempt (succeeded,
-  failed, skipped-as-duplicate, or filtered/suppressed) with enough detail to audit what happened.
+- **FR-018**: The system MUST record the outcome of each GitHub delivery attempt — one of
+  succeeded, failed, skipped-as-duplicate, or `filtered` — with enough detail to audit what
+  happened.
 - **FR-019**: A failure or misconfiguration affecting one source MUST NOT prevent the other
   source's events from being processed and delivered.
 
@@ -190,16 +209,18 @@ code or the selected style.
 
 - **GitHub source**: a recognized external source, registered alongside the existing one, with its
   own authenticity secret (referenced, not stored inline) and its own enable/disable control. The
-  set of GitHub event types the system understands is fixed in code; whether they are acted upon is
-  operator-controlled via routes.
+  set of GitHub event types the system understands is fixed in code and expressed as combined
+  `type.action` discriminators (e.g. `pull_request.opened`, `push`); whether they are acted upon is
+  operator-controlled via routes that match those discriminators exactly.
 - **Named formatting style**: a selectable way of rendering a normalized event into a Discord
   message. There is a default style plus additional named styles; a route names the style it wants
   (or none, meaning default). Styles are defined in code; selection is operator data.
 - **Route configuration**: operator-editable settings attached to a route that tune presentation
   (role mentions, accent color) and filtering (which event subtypes to deliver), letting one style
   serve many routes differently. (Extends the route's existing configuration capability.)
-- **Delivery outcome**: the recorded result of an attempt for a (route, event) — now including a
-  "suppressed by filter" outcome alongside the existing succeeded / failed / skipped-duplicate.
+- **Delivery outcome**: the recorded result of an attempt for a (route, event) — now adding a
+  distinct `filtered` status alongside the existing succeeded / failed / skipped-duplicate (the
+  set of recordable outcomes grows by one value).
 
 ## Success Criteria _(mandatory)_
 
