@@ -39,3 +39,6 @@ coverage/
 # Misc
 .tmp/
 tmp/
+
+# Generated spec HTML views (regenerate with `npm run spec:html`)
+specs/**/*.html
