@@ -7,7 +7,8 @@
  * otherwise (production reach; up to ~1h to propagate). Separate from the running bot,
  * which only dispatches commands; this is how their definitions reach Discord.
  */
-import { REST, Routes } from 'discord.js';
+import { Routes } from 'discord.js';
+import { createBotRest } from '../discord/rest.js';
 import { allCommands } from './commands/registry.js';
 // Side effect: register every command into the registry.
 import './commands/index.js';
@@ -22,7 +23,7 @@ if (!token || !appId) {
 }
 
 const body = allCommands().map((c) => c.data.toJSON());
-const rest = new REST({ version: '10' }).setToken(token);
+const rest = createBotRest(token);
 const route = guildId
   ? Routes.applicationGuildCommands(appId, guildId)
   : Routes.applicationCommands(appId);

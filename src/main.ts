@@ -19,7 +19,8 @@ import {
 import { setContext } from './core/context.js';
 import { createPool } from './db/client.js';
 import { PgRepository } from './db/pg-repository.js';
-import { WebhookDeliveryService } from './discord/delivery.js';
+import { DiscordDeliveryService } from './discord/delivery.js';
+import { createBotRest } from './discord/rest.js';
 import { createBotClient } from './bot/client.js';
 import { bindHandlers } from './bot/events/registry.js';
 import { Events } from 'discord.js';
@@ -44,7 +45,11 @@ async function main(): Promise<void> {
 
   // 2) Database + delivery (only if configured). Wires the runtime context so inbound
   //    webhooks can be processed; absence/failure leaves readiness "db down", not fatal.
-  const delivery = new WebhookDeliveryService();
+  //    The bot REST client (for mode='bot' targets) is built from the bot token when present;
+  //    without it, webhook delivery still works and bot deliveries fail with a clear reason.
+  const delivery = new DiscordDeliveryService(
+    config.discordBotToken ? createBotRest(config.discordBotToken) : undefined,
+  );
   if (config.databaseUrl) {
     try {
       const pool = createPool(config.databaseUrl);
