@@ -1,12 +1,11 @@
 # Architecture Document — Discord Integration Hub (forward-looking)
 
 > ⚠️ **TEMPORARY — shrinking toward deletion.** This file began as the full pre-spec design
-> input for the hub. **Phase 1 (the walking skeleton) is now built and shipped, so its design
-> detail has been removed** — that content lives in the durable artifacts: the spec
-> (`specs/001-walking-skeleton/`), the operations runbook (`docs/OPERATIONS.md`), and the
-> constitution (`.specify/memory/constitution.md`). What remains here is only the
-> **not-yet-implemented** roadmap (Phases 2–5) and the cross-cutting context a future spec
-> needs. As each phase is spec'd and built, delete its section from here. When nothing
+> input for the hub. **As each piece of work is spec'd and built, its content is deleted from
+> here** — the durable record lives in the per-feature specs (`specs/NNN-*/`), the operations
+> runbook (`docs/OPERATIONS.md`), and the constitution (`.specify/memory/constitution.md`). This
+> is not a changelog: shipped work is removed, never marked "done." What remains is only the
+> **not-yet-built** roadmap and the cross-cutting context a future spec needs. When nothing
 > forward-looking is left, delete this file.
 
 **Project:** `snackbyte-discord` — a Discord integration hub (inbound webhooks, outbound posts,
@@ -27,15 +26,15 @@ true as the hub grows. Governing principles (full text in the constitution): pat
 instances; verify before process; idempotent, rate-limited delivery through one chokepoint;
 runtime-mutable routing vs. compile-time-safe logic; always-on resilience; secrets by reference.
 
-Phase 1 established these as working code (source-adapter registry, canonical event, routing
+These patterns already exist as working code (source-adapter registry, canonical event, routing
 table + engine, single delivery service, command/event registries, liveness/readiness split).
-Future phases extend the _instances_, not the patterns.
+Future work extends the _instances_, not the patterns.
 
 ---
 
-## 2. The bot's interaction surface is an extension axis (Phase 2/3 design)
+## 2. The bot's interaction surface is an extension axis (future bot-depth design)
 
-Phase 1 ships only the slash-command path. The hub must eventually expose a capability through
+The base slash-command path exists; the hub must eventually expose a capability through
 **any** Discord interaction style — slash commands, text-prefix commands (`!role`), message
 components (buttons / selects), context menus, modals, and reaction-driven actions — and stay
 open to styles Discord adds later. Interaction style is therefore a **pluggable axis**, the same
@@ -45,7 +44,7 @@ several styles at once, all delegating to one shared piece of logic.
 The bot layers a small set of **interaction-handler registries** over the gateway, one per
 style, each populated by drop-in self-registering modules and dispatched generically:
 
-- slash / chat-input commands → dispatched from `interactionCreate` (shipped in Phase 1)
+- slash / chat-input commands → dispatched from `interactionCreate`
 - text-prefix commands → dispatched from `messageCreate` (requires the privileged Message
   Content intent, so this style stays **optional and isolated** — the bot boots and all other
   styles work with it OFF)
@@ -73,21 +72,15 @@ capabilities in a switch statement.
   commands keep working; gateway auto-reconnects; a crash restarts cleanly.
 - **Idempotency:** duplicate deliveries must not double-post (enforced per route+event).
 
-These already hold for Phase 1; new features must preserve them.
+These already hold in the built core; new features must preserve them.
 
 ---
 
 ## 4. Phasing / Roadmap (remaining)
 
-**Phase 1 — Walking skeleton: ✅ DONE** (shipped + verified live). See
-`specs/001-walking-skeleton/`. Not repeated here.
-
-**Phase 2 — Breadth.** Second inbound source (**GitHub**, `X-Hub-Signature-256`) proving the
-adapter pattern generalizes; the **bot-REST delivery path** (`mode='bot'`) alongside the existing
-webhook-URL path, for posting under the bot's identity / components / threads; **named transforms**
-beyond the default; **per-route `config`** (mention roles, filters, embed colors); and
-**admin/diagnostics endpoint(s)** beyond the Supabase table editor. GitHub-adapter-first is the
-sequenced proof-of-pattern.
+**Phase 2 — Breadth (remaining).** The **bot-REST delivery path** (`mode='bot'`) alongside the
+existing webhook-URL path, for posting under the bot's identity / components / threads; and
+**admin/diagnostics endpoint(s)** beyond the Supabase table editor.
 
 **Phase 3 — Bot depth, incl. BED-BOT parity (a requirement, not an example).** The hub MUST
 become a superset of the collaborator's self-hosted bot (`Bjarkirzz/BED-BOT`):
@@ -107,7 +100,8 @@ isolated), `bot_state`/kv, and scheduled jobs reusing the delivery service.
 **Phase 4 — Hardening/ops.** Retry/backoff tuning, a metrics endpoint, delivery-log
 retention/pruning, alerting on repeated `failed`, a secret-rotation runbook, and a richer admin
 UI if the table editor outgrows its role. (A durable store-and-forward **outbox** to close the
-acknowledge-then-deliver crash window — the known Phase-1 trade-off — belongs here.)
+acknowledge-then-deliver crash window — the known trade-off in the current in-process delivery —
+belongs here.)
 
 **Phase 5 (known evolution, not committed) — Service split.** If volume/scaling demands, split
 into two Cloud Run services (router + bot) over the same core + DB. The seam is pre-drawn (core
@@ -117,13 +111,13 @@ depends on neither face), so it's two thin entrypoints, not a rewrite.
 
 ## 5. Open questions still live for future specs
 
-(Phase-1 open questions are resolved and recorded in `specs/001-walking-skeleton/`. These remain
-relevant to later phases.)
+(Open questions already resolved are recorded in their feature's `specs/NNN-*/`. These remain
+unresolved and relevant to later phases.)
 
 1. **Durable outbox?** Whether to add a DB-backed outbox so Discord downtime / a crash between
    ack and delivery can't lose an event (currently acknowledge-then-deliver in-process). Affects
    `delivery_log` (a `pending`/retry-count column). Phase 4.
-2. **Multiple secrets per source.** Phase 1 uses one signing secret per source slug
+2. **Multiple secrets per source.** The hub uses one signing secret per source slug
    (`sources.secret_ref`). Supporting many webhooks per source (e.g. several ClickUp workspaces),
    each with its own secret, needs per-webhook source rows or a secret-per-webhook lookup.
 3. **Route lookup caching.** Per-event DB read (always fresh, "edit a row → instant") vs. a TTL
