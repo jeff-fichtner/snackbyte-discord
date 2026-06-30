@@ -1,6 +1,6 @@
 {
   "name": "snackbyte-discord",
-  "version": "0.1",
+  "version": "0.4",
   "private": true,
   "type": "module",
   "description": "snackbyte-discord — a snackbyte app.",
