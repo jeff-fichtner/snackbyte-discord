@@ -99,7 +99,7 @@ in the service config.
 ## Database (routing store)
 
 PostgreSQL (Supabase). Schema + seed: `migrations/0001_init.sql` and later additive migrations
-(`0002`–`0004`). Apply with `npm run migrate` (needs `DATABASE_URL`; idempotent). Operators
+(`0002`–`0005`). Apply with `npm run migrate` (needs `DATABASE_URL`; idempotent). Operators
 add/strike routes by editing the `routes` table directly (Supabase Table Editor is the day-one
 admin UI) — no redeploy; the engine reads routes live per event.
 
@@ -123,6 +123,33 @@ To wire up GitHub:
 mention), `accentColor` (embed color), and `excludeSubtypes` (suppress events whose normalized
 `data.subtype` is listed — recorded as a `filtered` delivery outcome). Set `transform = 'github'`
 on a route for GitHub-styled rendering; absent/unknown falls back to the default.
+
+## Delivery targets
+
+Where a route delivers is a `discord_targets` row, referenced by `routes.target_id`. A target has a
+`mode` that picks the delivery mechanism; a route switches mechanism just by pointing at a different
+target (or changing the target's mode) — rows only, no redeploy.
+
+- **`mode = 'webhook'`** — posts to a channel webhook URL. The row holds `webhook_url_ref` (a
+  reference name, e.g. `demo_channel_webhook`, resolved from env at runtime — never the URL itself).
+  Posts under whatever name/avatar the channel webhook is configured with.
+- **`mode = 'bot'`** — posts into a channel **as the bot**, via the bot's REST client. The row holds
+  `channel_id` (required — the channel to post into) and may hold `guild_id` (optional, for operator
+  readability). No `webhook_url_ref`. Use this to post under the bot's own identity, or to reach a
+  channel that has no webhook.
+
+**Operational precondition for a bot target**: the bot must be a member of the target guild and have
+permission to post in the target channel. The hub does not grant this — arrange it in Discord. If it
+is missing (or the channel id is wrong/deleted), that delivery is recorded in `delivery_log` as
+`failed` with a diagnosable reason (e.g. a 403/404 from Discord), recorded immediately without
+retrying; other routes for the same event are unaffected and the inbound provider is still
+acknowledged. Transient problems (rate limits, Discord 5xx, the bot briefly unable to reach Discord)
+are retried with backoff before being recorded as `failed`.
+
+The bot path reuses the existing `DISCORD_BOT_TOKEN` — no new secret. Migration `0005` enforces the
+per-mode required field (a `bot` row must have `channel_id`; a `webhook` row must have
+`webhook_url_ref`), so a half-configured target is rejected in the table editor rather than failing
+at delivery time.
 
 ## Slash commands
 
