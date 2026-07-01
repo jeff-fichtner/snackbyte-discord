@@ -58,6 +58,14 @@ export class PgRepository implements Repository {
     };
   }
 
+  async listSelfAssignableRoles(guildId: string): Promise<string[]> {
+    const { rows } = await this.pool.query(
+      `SELECT role_id FROM self_assignable_roles WHERE guild_id = $1`,
+      [guildId],
+    );
+    return rows.map((r) => r.role_id);
+  }
+
   async alreadyDelivered(routeId: string, dedupeKey: string): Promise<boolean> {
     const { rowCount } = await this.pool.query(
       `SELECT 1 FROM delivery_log WHERE route_id = $1 AND dedupe_key = $2 AND status = 'ok' LIMIT 1`,

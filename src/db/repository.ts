@@ -31,6 +31,8 @@ export interface Repository {
   findEnabledRoutes(source: string, eventType: string): Promise<RouteRecord[]>;
   /** Resolve a delivery target by id (or null if missing/disabled). */
   getTarget(id: string): Promise<DeliveryTarget | null>;
+  /** Role ids an operator has marked self-assignable in this guild (empty when none). */
+  listSelfAssignableRoles(guildId: string): Promise<string[]>;
   /** True if this (route, event) was already delivered (idempotency pre-check). */
   alreadyDelivered(routeId: string, dedupeKey: string): Promise<boolean>;
   /** Record a delivery attempt outcome; the unique (route_id, dedupe_key) guards dups. */

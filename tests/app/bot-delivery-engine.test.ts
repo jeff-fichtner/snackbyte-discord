@@ -58,6 +58,9 @@ class FakeRepo implements Repository {
     this.records.push(input);
     if (input.status === 'ok') this.delivered.add(`${input.routeId}:${input.dedupeKey}`);
   }
+  async listSelfAssignableRoles(): Promise<string[]> {
+    return [];
+  }
   async ping(): Promise<boolean> {
     return true;
   }

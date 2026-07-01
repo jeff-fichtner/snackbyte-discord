@@ -47,6 +47,9 @@ class FakeRepo implements Repository {
     return false;
   }
   async recordDelivery(): Promise<void> {}
+  async listSelfAssignableRoles(): Promise<string[]> {
+    return [];
+  }
   async ping(): Promise<boolean> {
     return true;
   }

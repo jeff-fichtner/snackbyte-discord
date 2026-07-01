@@ -66,6 +66,9 @@ class FakeRepo implements Repository {
   async recordDelivery(input: DeliveryRecordInput): Promise<void> {
     this.records.push(input);
   }
+  async listSelfAssignableRoles(): Promise<string[]> {
+    return [];
+  }
   async ping(): Promise<boolean> {
     return true;
   }
