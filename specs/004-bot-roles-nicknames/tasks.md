@@ -34,7 +34,7 @@ capability logic lives in `src/bot/members/` (interaction-style-agnostic, per FR
 role/nickname management uses the already-present `Guilds`+`GuildMembers` intents and the
 `ManageRoles`/`ManageNicknames` *permissions* (an operator grant, not code).
 
-- [ ] T001 Verify no new dependency/intent is required: confirm `discord.js` is a dependency and that `src/bot/client.ts` already requests `GatewayIntentBits.Guilds` + `GuildMembers` (sufficient for role/nickname management — do NOT add Message Content). No code change expected; this is a verification gate per research §5.
+- [X] T001 Verify no new dependency/intent is required: confirm `discord.js` is a dependency and that `src/bot/client.ts` already requests `GatewayIntentBits.Guilds` + `GuildMembers` (sufficient for role/nickname management — do NOT add Message Content). No code change expected; this is a verification gate per research §5.
 
 ---
 
@@ -46,8 +46,8 @@ command uses it yet.
 
 **⚠️ CRITICAL**: Complete before the user-story phases.
 
-- [ ] T002 Create `migrations/0006_self_assignable_roles.sql`: a new table `self_assignable_roles (guild_id text NOT NULL, role_id text NOT NULL, created_at timestamptz NOT NULL DEFAULT now())` with `UNIQUE (guild_id, role_id)`. Additive; runs once via the `schema_migrations` ledger. No FKs (guild_id/role_id are external Discord ids). Per data-model.md.
-- [ ] T003 Add `listSelfAssignableRoles(guildId: string): Promise<string[]>` to the `Repository` interface in `src/db/repository.ts`, and implement it in `src/db/pg-repository.ts` as a parameterized `SELECT role_id FROM self_assignable_roles WHERE guild_id = $1` returning the role_id set (empty array when none). Per data-model.md.
+- [X] T002 Create `migrations/0006_self_assignable_roles.sql`: a new table `self_assignable_roles (guild_id text NOT NULL, role_id text NOT NULL, created_at timestamptz NOT NULL DEFAULT now())` with `UNIQUE (guild_id, role_id)`. Additive; runs once via the `schema_migrations` ledger. No FKs (guild_id/role_id are external Discord ids). Per data-model.md.
+- [X] T003 Add `listSelfAssignableRoles(guildId: string): Promise<string[]>` to the `Repository` interface in `src/db/repository.ts`, and implement it in `src/db/pg-repository.ts` as a parameterized `SELECT role_id FROM self_assignable_roles WHERE guild_id = $1` returning the role_id set (empty array when none). Per data-model.md.
 
 **Checkpoint**: The guild whitelist can be read through the repository; `check:all` green; nothing
 member-facing yet.
@@ -65,13 +65,13 @@ all via the member's command and resulting role membership.
 
 ### Tests for User Story 1 ⚠️ (write first, ensure they FAIL before implementing)
 
-- [ ] T004 [P] [US1] Create `tests/machinery/member-roles.test.ts` (toggle portion): with a fake guild-member surface and a whitelist set, assert `toggleSelfRole` — adds when absent / removes when present (idempotent direction), refuses `not-whitelisted` for a role not in the set (no mutation called), refuses `bot-cannot-manage` when the role is at/above the bot's position or the bot lacks `ManageRoles` (no mutation), and surfaces a `role-not-found` refusal (not a throw) when the add/remove backstop trips. Assert no code path mutates a member other than the one passed (self-only). Per contracts/role-capability.md.
+- [X] T004 [P] [US1] Create `tests/machinery/member-roles.test.ts` (toggle portion): with a fake guild-member surface and a whitelist set, assert `toggleSelfRole` — adds when absent / removes when present (idempotent direction), refuses `not-whitelisted` for a role not in the set (no mutation called), refuses `bot-cannot-manage` when the role is at/above the bot's position or the bot lacks `ManageRoles` (no mutation), and surfaces a `role-not-found` refusal (not a throw) when the add/remove backstop trips. Assert no code path mutates a member other than the one passed (self-only). Per contracts/role-capability.md.
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Create `src/bot/members/roles.ts` with `toggleSelfRole(member, role, whitelistRoleIds)`: evaluate the gate in order — whitelist membership (FR-002), then bot-position + `ManageRoles` permission (FR-007) — before any mutation; then `member.roles.remove(role)` if present else `member.roles.add(role)`; return a structured outcome (added/removed/refused-with-reason). Wrap the mutation so a race surfaces as a `role-not-found` refusal, never a throw. Interaction-agnostic (takes objects, returns an outcome — no interaction, no reply). Per contracts/role-capability.md and research §2/§3.
-- [ ] T006 [US1] Create `src/bot/commands/role.ts`: a `/role` slash command with a required `role` option (native role picker); `execute` defers ephemerally, reads the guild whitelist via `getContext().repo.listSelfAssignableRoles(guildId)`, calls `toggleSelfRole`, and edits in an ephemeral confirmation/refusal. Acts only on `interaction.member` — no target-member option. Follow the `ping` defer/editReply pattern. Per contracts/commands.md.
-- [ ] T007 [US1] Register the `/role` command in `src/bot/commands/index.ts` (one `registerCommand` line). Run `npm test -- member-roles` and confirm green.
+- [X] T005 [US1] Create `src/bot/members/roles.ts` with `toggleSelfRole(member, role, whitelistRoleIds)`: evaluate the gate in order — whitelist membership (FR-002), then bot-position + `ManageRoles` permission (FR-007) — before any mutation; then `member.roles.remove(role)` if present else `member.roles.add(role)`; return a structured outcome (added/removed/refused-with-reason). Wrap the mutation so a race surfaces as a `role-not-found` refusal, never a throw. Interaction-agnostic (takes objects, returns an outcome — no interaction, no reply). Per contracts/role-capability.md and research §2/§3.
+- [X] T006 [US1] Create `src/bot/commands/role.ts`: a `/role` slash command with a required `role` option (native role picker); `execute` defers ephemerally, reads the guild whitelist via `getContext().repo.listSelfAssignableRoles(guildId)`, calls `toggleSelfRole`, and edits in an ephemeral confirmation/refusal. Acts only on `interaction.member` — no target-member option. Follow the `ping` defer/editReply pattern. Per contracts/commands.md.
+- [X] T007 [US1] Register the `/role` command in `src/bot/commands/index.ts` (one `registerCommand` line). Run `npm test -- member-roles` and confirm green.
 
 **Checkpoint**: A member can self-toggle a whitelisted role, refused outside the whitelist and above
 the bot — the MVP role capability.
@@ -93,7 +93,7 @@ operator removes it; the member is refused and it leaves the listing (US2) — n
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T008 [P] [US4] Extend `tests/machinery/member-roles.test.ts` (live-whitelist portion): assert that `toggleSelfRole` honors exactly the whitelist set passed to it — a role becomes assignable when added to the set and is refused when absent — proving the authorization is driven entirely by the (operator-edited) data, with no auto-add path in the capability (FR-005/FR-006). (No new source file — this validates the Phase-2 read + Phase-3 gate are data-driven.)
+- [X] T008 [P] [US4] Extend `tests/machinery/member-roles.test.ts` (live-whitelist portion): assert that `toggleSelfRole` honors exactly the whitelist set passed to it — a role becomes assignable when added to the set and is refused when absent — proving the authorization is driven entirely by the (operator-edited) data, with no auto-add path in the capability (FR-005/FR-006). (No new source file — this validates the Phase-2 read + Phase-3 gate are data-driven.)
 
 **Checkpoint**: Operator edits to the whitelist data govern member self-assignment with no code path
 that bypasses or auto-populates the whitelist.
@@ -110,12 +110,12 @@ adds/removes one, the next listing reflects it with no redeploy; empty whitelist
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T009 [P] [US2] Extend `tests/machinery/member-roles.test.ts` (list portion): assert `listSelfAssignableRoles(guild, whitelistRoleIds)` returns the live roles whose ids are whitelisted (name+id), omits ids with no matching live role (deleted/stale), and returns an empty result for an empty or all-stale set (the caller renders "none available"). Per contracts/role-capability.md.
+- [X] T009 [P] [US2] Extend `tests/machinery/member-roles.test.ts` (list portion): assert `listSelfAssignableRoles(guild, whitelistRoleIds)` returns the live roles whose ids are whitelisted (name+id), omits ids with no matching live role (deleted/stale), and returns an empty result for an empty or all-stale set (the caller renders "none available"). Per contracts/role-capability.md.
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Add `listSelfAssignableRoles(guild, whitelistRoleIds)` to `src/bot/members/roles.ts` (read-only resolve of whitelisted ids → live roles, stale ids omitted). Per contracts/role-capability.md.
-- [ ] T011 [US2] Create `src/bot/commands/roles.ts`: a `/roles` slash command (no options); `execute` defers ephemerally, reads the guild whitelist via the repository, calls `listSelfAssignableRoles`, and replies ephemerally with the role names or "No roles are currently self-assignable." Register it in `src/bot/commands/index.ts`. Run `npm test -- member-roles`. Per contracts/commands.md.
+- [X] T010 [US2] Add `listSelfAssignableRoles(guild, whitelistRoleIds)` to `src/bot/members/roles.ts` (read-only resolve of whitelisted ids → live roles, stale ids omitted). Per contracts/role-capability.md.
+- [X] T011 [US2] Create `src/bot/commands/roles.ts`: a `/roles` slash command (no options); `execute` defers ephemerally, reads the guild whitelist via the repository, calls `listSelfAssignableRoles`, and replies ephemerally with the role names or "No roles are currently self-assignable." Register it in `src/bot/commands/index.ts`. Run `npm test -- member-roles`. Per contracts/commands.md.
 
 **Checkpoint**: A member can discover the assignable set, matching the operator's live whitelist.
 
@@ -132,12 +132,12 @@ bot.
 
 ### Tests for User Story 3 ⚠️ (write first, ensure they FAIL before implementing)
 
-- [ ] T012 [P] [US3] Create `tests/machinery/member-nickname.test.ts`: with a fake guild-member surface, assert `setOwnNickname` — sets a valid value, clears on `undefined` (reset), refuses `invalid-input` for >32 chars and for whitespace-only (no mutation, message states the limit), refuses `bot-cannot-manage` when the member outranks the bot or the bot lacks `ManageNicknames` (no mutation) — for BOTH a set value AND a reset (`undefined`), so a reset when the member outranks the bot is still refused, not silently attempted — and surfaces an unexpected API error as a clean refusal, not a throw. Per contracts/role-capability.md.
+- [X] T012 [P] [US3] Create `tests/machinery/member-nickname.test.ts`: with a fake guild-member surface, assert `setOwnNickname` — sets a valid value, clears on `undefined` (reset), refuses `invalid-input` for >32 chars and for whitespace-only (no mutation, message states the limit), refuses `bot-cannot-manage` when the member outranks the bot or the bot lacks `ManageNicknames` (no mutation) — for BOTH a set value AND a reset (`undefined`), so a reset when the member outranks the bot is still refused, not silently attempted — and surfaces an unexpected API error as a clean refusal, not a throw. Per contracts/role-capability.md.
 
 ### Implementation for User Story 3
 
-- [ ] T013 [US3] Create `src/bot/members/nickname.ts` with `setOwnNickname(member, value)`: validate length (≤32) and non-whitespace when a value is given (FR-004), then the bot-position + `ManageNicknames` guard (FR-008), then `member.setNickname(value ?? null)`; return a structured outcome (set/cleared/refused-with-reason). Wrap so an API error is a clean refusal. Interaction-agnostic. Per contracts/role-capability.md.
-- [ ] T014 [US3] Create `src/bot/commands/nick.ts`: a `/nick` slash command with an optional `nickname` string option; `execute` defers ephemerally, calls `setOwnNickname(interaction.member, value)`, edits in an ephemeral confirmation/refusal. Acts only on the invoking member. Register it in `src/bot/commands/index.ts`. Run `npm test -- member-nickname`. Per contracts/commands.md.
+- [X] T013 [US3] Create `src/bot/members/nickname.ts` with `setOwnNickname(member, value)`: validate length (≤32) and non-whitespace when a value is given (FR-004), then the bot-position + `ManageNicknames` guard (FR-008), then `member.setNickname(value ?? null)`; return a structured outcome (set/cleared/refused-with-reason). Wrap so an API error is a clean refusal. Interaction-agnostic. Per contracts/role-capability.md.
+- [X] T014 [US3] Create `src/bot/commands/nick.ts`: a `/nick` slash command with an optional `nickname` string option; `execute` defers ephemerally, calls `setOwnNickname(interaction.member, value)`, edits in an ephemeral confirmation/refusal. Acts only on the invoking member. Register it in `src/bot/commands/index.ts`. Run `npm test -- member-nickname`. Per contracts/commands.md.
 
 **Checkpoint**: A member can set/reset their own nickname safely; all four self-service commands work.
 
@@ -147,9 +147,9 @@ bot.
 
 **Purpose**: Docs, registration, and end-to-end validation.
 
-- [ ] T015 [P] Update `docs/OPERATIONS.md`: add a "Self-service roles & nicknames" section — how to whitelist a role (add a `self_assignable_roles` row: `guild_id` + `role_id`), the operational precondition (the bot's role must sit above the roles it manages, with Manage Roles / Manage Nicknames granted), the `/role` `/roles` `/nick` commands, and that `npm run deploy:commands` must run to register new commands. State rules directly; no spec/FR citations (Principle V).
-- [ ] T016 Run `npm run deploy:commands` against the test guild (guild-scoped, instant) to register `/role`, `/roles`, `/nick`, then run the `quickstart.md` end-to-end validation: whitelist a role, toggle it, refusal outside the whitelist, list, nickname set/reset/over-limit, the bot-position guard, and the self-only + webhook-no-regression checks. Confirm each success signal maps to its SC.
-- [ ] T017 Run `npm run check:all` (format + lint + typecheck + test) and confirm green on a clean checkout — the release gate (Principle V). Confirm the full 001–003 suite still passes (bot/webhook no-regression, SC-007). Add/keep an assertion that the bot client's requested intents are still exactly `Guilds`+`GuildMembers` (no new intent, Message Content absent) so FR-012's "boots and functions with Message Content off" has executable coverage, not just the T001 static check — e.g. a small test importing `createBotClient()` and asserting its intents contain neither `GatewayIntentBits.MessageContent` nor any addition beyond the two.
+- [X] T015 [P] Update `docs/OPERATIONS.md`: add a "Self-service roles & nicknames" section — how to whitelist a role (add a `self_assignable_roles` row: `guild_id` + `role_id`), the operational precondition (the bot's role must sit above the roles it manages, with Manage Roles / Manage Nicknames granted), the `/role` `/roles` `/nick` commands, and that `npm run deploy:commands` must run to register new commands. State rules directly; no spec/FR citations (Principle V).
+- [ ] T016 Run `npm run deploy:commands` against the test guild (guild-scoped, instant) to register `/role`, `/roles`, `/nick`, then run the `quickstart.md` end-to-end validation: whitelist a role, toggle it, refusal outside the whitelist, list, nickname set/reset/over-limit, the bot-position guard, and the self-only + webhook-no-regression checks. Confirm each success signal maps to its SC. **Status: not run — requires a live bot in a guild + command registration (an operator/deploy step, same class as 003's live e2e). The automated proof (97 tests, `check:all`) covers the capability logic + the intent guard; the live run confirms the Discord-side wiring after deploy.**
+- [X] T017 Run `npm run check:all` (format + lint + typecheck + test) and confirm green on a clean checkout — the release gate (Principle V). Confirm the full 001–003 suite still passes (bot/webhook no-regression, SC-007). Add/keep an assertion that the bot client's requested intents are still exactly `Guilds`+`GuildMembers` (no new intent, Message Content absent) so FR-012's "boots and functions with Message Content off" has executable coverage, not just the T001 static check — e.g. a small test importing `createBotClient()` and asserting its intents contain neither `GatewayIntentBits.MessageContent` nor any addition beyond the two.
 
 ---
 

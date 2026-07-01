@@ -154,11 +154,35 @@ at delivery time.
 ## Slash commands
 
 ```bash
-npm run deploy:commands   # registers /ping etc. with Discord
+npm run deploy:commands   # registers /ping, /role, /roles, /nick with Discord
 ```
 
 Guild-scoped (instant) when `DISCORD_DEV_GUILD_ID` is set; global (~1h propagation) otherwise.
 Run whenever the set of commands changes.
+
+## Self-service roles & nicknames
+
+Members manage their own roles and nickname through slash commands, gated by an operator-curated
+whitelist:
+
+- `/role <role>` — toggle a self-assignable role on yourself (adds if you lack it, removes if you
+  have it). Only roles in the whitelist can be toggled; any other pick is refused.
+- `/roles` — list the roles currently self-assignable in the server.
+- `/nick [nickname]` — set your server nickname (max 32 chars), or reset it by leaving it blank.
+
+**Whitelisting a role** (operator): add a row to the `self_assignable_roles` table —
+`guild_id = <the server id>`, `role_id = <the role id>`. Presence of the row is the whole
+authorization; remove the row to stop a role being self-assignable. Edited live, no redeploy (like
+routes). The app never auto-adds a role.
+
+**Operational precondition**: the bot's role must sit **above** the roles it manages, and the bot
+must have **Manage Roles** and **Manage Nicknames** in the server. If a role/member is above the
+bot, or a permission is missing, the command refuses safely with a diagnosable message and changes
+nothing — it never half-acts. Whitelisting an admin role does not let a member escalate: the
+bot-position guard still refuses anything above the bot, so position the bot's role deliberately.
+
+Only the `Guilds` + `GuildMembers` gateway intents are used (no Message Content). After adding new
+commands, run `npm run deploy:commands`.
 
 ## Networking (how the domains are wired)
 
