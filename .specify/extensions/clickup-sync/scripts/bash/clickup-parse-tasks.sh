@@ -37,6 +37,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/../../../../scripts/bash/common.sh"
 
+# Self-sufficiency: define has_jq only if the host common.sh didn't (older cores lack it).
+type has_jq >/dev/null 2>&1 || has_jq() { command -v jq >/dev/null 2>&1; }
+
 if [[ -z "$FILE" ]]; then
     eval "$(get_feature_paths)"
     FILE="${FEATURE_DIR:-}/tasks.md"

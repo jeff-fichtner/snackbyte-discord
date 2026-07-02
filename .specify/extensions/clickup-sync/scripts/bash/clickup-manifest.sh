@@ -26,6 +26,15 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/../../../../scripts/bash/common.sh"
 
+# Self-sufficiency: older spec-kit cores ship a common.sh without these helpers.
+# Define fallbacks only if the host did not provide them, so the extension works on
+# any core version (do not assume a specific common.sh).
+type has_jq >/dev/null 2>&1 || has_jq() { command -v jq >/dev/null 2>&1; }
+type json_escape >/dev/null 2>&1 || json_escape() {
+    local s="$1"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; s="${s//$'\n'/\\n}"; s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
 DIR_OVERRIDE=""
 SUB=""
 ARGS=()
