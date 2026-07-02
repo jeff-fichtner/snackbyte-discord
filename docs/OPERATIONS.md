@@ -99,7 +99,7 @@ in the service config.
 ## Database (routing store)
 
 PostgreSQL (Supabase). Schema + seed: `migrations/0001_init.sql` and later additive migrations
-(`0002`–`0005`). Apply with `npm run migrate` (needs `DATABASE_URL`; idempotent). Operators
+(`0002`–`0006`). Apply with `npm run migrate` (needs `DATABASE_URL`; idempotent). Operators
 add/strike routes by editing the `routes` table directly (Supabase Table Editor is the day-one
 admin UI) — no redeploy; the engine reads routes live per event.
 
@@ -169,6 +169,15 @@ whitelist:
   have it). Only roles in the whitelist can be toggled; any other pick is refused.
 - `/roles` — list the roles currently self-assignable in the server.
 - `/nick [nickname]` — set your server nickname (max 32 chars), or reset it by leaving it blank.
+
+**Note on `/nick` vs. Discord's built-in `/nick`**: Discord ships a built-in `/nick` that sets the
+invoker's *own* nickname (gated by the "Change Nickname" permission). Ours overlaps it for self-nick
+and is intended to grow into the superset (a later spec adds nicknaming *other* members, which the
+built-in cannot do). If you want ours to be the only `/nick` members see, remove **Change Nickname**
+from `@everyone` (Server Settings → Roles → @everyone) — the built-in then disappears for members and
+they change nicknames only through the bot. Otherwise both appear in the picker (distinguished by the
+app icon); ours still works. This is a per-server operator choice; the app cannot un-register a
+Discord built-in.
 
 **Whitelisting a role** (operator): add a row to the `self_assignable_roles` table —
 `guild_id = <the server id>`, `role_id = <the role id>`. Presence of the row is the whole

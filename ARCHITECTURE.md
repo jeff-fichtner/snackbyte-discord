@@ -34,12 +34,13 @@ Future work extends the _instances_, not the patterns.
 
 ## 2. The bot's interaction surface is an extension axis (future bot-depth design)
 
-The base slash-command path exists; the hub must eventually expose a capability through
-**any** Discord interaction style — slash commands, text-prefix commands (`!role`), message
-components (buttons / selects), context menus, modals, and reaction-driven actions — and stay
-open to styles Discord adds later. Interaction style is therefore a **pluggable axis**, the same
-way inbound sources are: the same capability (e.g. self-assign a role) can be offered through
-several styles at once, all delegating to one shared piece of logic.
+The slash-command path exists, and the capability/adapter split is now proven in code (the
+self-service role/nickname capabilities live in `src/bot/members/`, invoked by thin slash-command
+adapters). The hub must still expose those capabilities through **other** Discord interaction styles
+— text-prefix commands (`!role`), message components (buttons / selects), context menus, modals, and
+reaction-driven actions — and stay open to styles Discord adds later. Interaction style is a
+**pluggable axis**, the same way inbound sources are: one capability (e.g. self-assign a role) can be
+offered through several styles at once, all delegating to the one shared piece of logic.
 
 The bot layers a small set of **interaction-handler registries** over the gateway, one per
 style, each populated by drop-in self-registering modules and dispatched generically:
@@ -78,24 +79,21 @@ These already hold in the built core; new features must preserve them.
 
 ## 4. Phasing / Roadmap (remaining)
 
-**Phase 2 — Breadth (remaining).** The **bot-REST delivery path** (`mode='bot'`) alongside the
-existing webhook-URL path, for posting under the bot's identity / components / threads; and
-**admin/diagnostics endpoint(s)** beyond the Supabase table editor.
+**Phase 2 — Breadth (remaining).** **Admin/diagnostics endpoint(s)** beyond the Supabase table
+editor (inspect routes, view/replay `delivery_log`, and an in-Discord operator command to curate
+the self-assignable-role whitelist).
 
-**Phase 3 — Bot depth, incl. BED-BOT parity (a requirement, not an example).** The hub MUST
-become a superset of the collaborator's self-hosted bot (`Bjarkirzz/BED-BOT`):
+**Phase 3 — Bot depth, remaining (BED-BOT parity is a requirement, not an example).** Core parity —
+self-assignable roles, the assignable-role list, self-service nicknames, and the operator-editable
+whitelist safety model — is built. What remains in this phase, exposed through the interaction-handler
+registries (§2) over the shared capability logic already in place:
 
-- self-assignable **roles** (toggle a role on yourself),
-- a **list** of which roles are self-assignable,
-- self-service **nicknames** (set / reset, enforcing Discord's 32-char limit),
-- the **whitelist safety model** (only explicitly allowed roles self-assignable — never
-  staff/admin).
-
-In our build the whitelist is operator-editable runtime state (`bot_state`/a roles table), not a
-hard-coded list. These capabilities are exposed through the interaction-handler registries (§2) —
-slash commands to start, other styles (text-prefix, components, …) as desired, all delegating to
-one shared capability. Also in this phase: reaction-roles, moderation (Message Content opt-in,
-isolated), `bot_state`/kv, and scheduled jobs reusing the delivery service.
+- **reaction-roles** (assign a role by reacting) and other interaction styles (buttons / selects,
+  text-prefix) over the existing role/nickname capabilities;
+- **moderation** (requires the privileged Message Content intent — opt-in and isolated), including
+  growing `/nick` to nickname *other* members (the piece Discord's built-in `/nick` can't do);
+- **`bot_state`/kv** for free-form per-guild config, and **scheduled jobs** reusing the delivery
+  service.
 
 **Phase 4 — Hardening/ops.** Retry/backoff tuning, a metrics endpoint, delivery-log
 retention/pruning, alerting on repeated `failed`, a secret-rotation runbook, and a richer admin

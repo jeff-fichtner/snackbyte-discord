@@ -1,8 +1,9 @@
 # snackbyte-discord
 
-A Discord integration hub: receives webhooks from external services (ClickUp, with more to
-come), routes them through an operator-editable table to Discord channels, and runs an
-always-on Discord bot — one TypeScript/Node service on Google Cloud Run. Operational guide:
+A Discord integration hub: receives webhooks from external services (ClickUp and GitHub),
+routes them through an operator-editable table to Discord channels — via channel webhooks or as
+the bot itself — and runs an always-on Discord bot with self-service member commands (roles,
+nicknames). One TypeScript/Node service on Google Cloud Run. Operational guide:
 [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ## Develop
@@ -78,25 +79,26 @@ see [DEPLOY.md](DEPLOY.md).)
 
 ## Spec-driven development
 
-This project is set up for spec-driven development (GitHub Spec Kit). Nothing is
-spec'd yet — start here:
+This project is built with spec-driven development (GitHub Spec Kit). The app's principles
+live in the constitution (`.specify/memory/constitution.md`); shipped features live under
+`specs/NNN-*/`. Each feature is spec'd and built on its own `spec/NNN-*` branch and merged only
+once complete.
 
-1. **`/speckit-constitution`** — establish this app's principles. A few worth carrying
-   forward (they apply broadly, not just to this app):
-   - **Spec stays in spec spaces.** `specs/`, `.specify/`, `.claude/` are AI-assist
-     scaffolding. Shipped code (`src/`, `tests/`, `README`, `docs/`, scripts) must
-     stand on its own and never reference specs, FRs, or principle numbers — state the
-     rule directly instead.
-   - **Convention over configuration.** The tooling is set up and complete; don't
-     re-litigate it per feature.
-   - **Pinned, linted, type-safe, tested.** Node 24 LTS, TypeScript throughout, and
-     `npm run check:all` (format + lint + typecheck + test) green on every change.
-   - Then add principles specific to this app.
-2. **`/speckit-specify`** → **`/speckit-plan`** → **`/speckit-tasks`** →
-   **`/speckit-implement`** — one feature at a time, one branch per feature.
-   - Optional quality gates: **`/speckit-clarify`** (de-risk an ambiguous spec before
-     planning), **`/speckit-checklist`** (validate requirements after planning), and
-     **`/speckit-analyze`** (cross-artifact consistency before implementing).
-   - **`/speckit-converge`** — when implementation drifts from the plan, it reconciles
-     the built code against spec/plan/tasks and appends the remaining work so
-     `/speckit-implement` can finish it.
+**Workflow per feature** — one at a time, one branch per feature:
+
+1. **`/speckit-specify`** → **`/speckit-plan`** → **`/speckit-tasks`** →
+   **`/speckit-implement`**.
+2. Quality gates: **`/speckit-clarify`** (de-risk an ambiguous spec before planning),
+   **`/speckit-checklist`** (validate requirements after planning), **`/speckit-analyze`**
+   (cross-artifact consistency before implementing), and **`/speckit-converge`** (reconcile
+   built code against spec/plan/tasks and append any remaining work).
+
+The governing principles (full text in the constitution) — a few that shape everything here:
+
+- **Spec stays in spec spaces.** `specs/`, `.specify/`, `.claude/` are AI-assist scaffolding.
+  Shipped code (`src/`, `tests/`, `README`, `docs/`, scripts) stands on its own and never
+  references specs, FRs, or principle numbers — it states the rule directly.
+- **Patterns over instances.** Each source, transform, delivery mode, command, and interaction
+  style is an instance of a reusable pattern, never special-cased into core.
+- **Pinned, linted, type-safe, tested.** Node 24, TypeScript throughout, `npm run check:all`
+  (format + lint + typecheck + test) green on every change.
