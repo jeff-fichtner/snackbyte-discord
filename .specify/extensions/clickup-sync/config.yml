@@ -7,5 +7,5 @@
 #
 # Provisioning refuses to run while these still hold the placeholder <...> values.
 
-space: "<your-space-name>" # ClickUp space the shared list lives in
-list: "<your-shared-list-name>" # the one shared list all feature-cards go into
+space: "snackbyte-discord" # ClickUp space the shared list lives in
+list: "Features" # the one shared list all feature-cards go into

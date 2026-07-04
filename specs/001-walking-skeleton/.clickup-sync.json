@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1",
+  "feature": "001-walking-skeleton",
+  "workspaceId": "90141363864",
+  "spaceId": "90146179804",
+  "listId": "901417496906",
+  "statusMapping": {
+    "not-started": "backlog",
+    "in-progress": "in development",
+    "done": "shipped"
+  },
+  "card": {
+    "id": "86barauvn",
+    "hash": "sha256:aa8bec6a6250376bb53d8925b041a3a7c2700b3197e6d19536670142d9c01d2f"
+  },
+  "userStories": [
+    {
+      "us": "US1",
+      "id": "86barav0w",
+      "hash": "sha256:296d3160ef701fa54df59c39fee720b7acb90344b5a76fd6004b2dc7a0a478f8",
+      "dependsOn": []
+    },
+    {
+      "us": "US2",
+      "id": "86barav1x",
+      "hash": "sha256:c40fa874b195e6b9550c4f9da7b2492833573852ca997e1e840e44395324a694",
+      "dependsOn": [
+        "US1"
+      ]
+    },
+    {
+      "us": "US3",
+      "id": "86barav3b",
+      "hash": "sha256:38c924baebce65d72c46c6ce65b33f6bcf416eb425ed4fcc7bdad66f723e2d77",
+      "dependsOn": [
+        "US1",
+        "US2"
+      ]
+    }
+  ]
+}

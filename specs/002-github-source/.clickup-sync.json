@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1",
+  "feature": "002-github-source",
+  "workspaceId": "90141363864",
+  "spaceId": "90146179804",
+  "listId": "901417496906",
+  "statusMapping": {
+    "not-started": "backlog",
+    "in-progress": "in development",
+    "done": "shipped"
+  },
+  "card": {
+    "id": "86barauwx",
+    "hash": "sha256:604d3b1a4a59b9d627d1dbb5315f7dd652e2e156769ab171ef760ee6d38e0945"
+  },
+  "userStories": [
+    {
+      "us": "US1",
+      "id": "86barav8e",
+      "hash": "sha256:701726ef5ad5b2d38f2341d760ed26afec401327f0a506ad1fedd602ed57188a",
+      "dependsOn": []
+    },
+    {
+      "us": "US2",
+      "id": "86barav9e",
+      "hash": "sha256:ca2f078bed32b247662978b3076784af564f15c0312c6faa57f57ed5ffbde499",
+      "dependsOn": [
+        "US1"
+      ]
+    },
+    {
+      "us": "US3",
+      "id": "86baravaj",
+      "hash": "sha256:e35e5698482703f8adaa2538a10fe613bc057b9b698c57747b345e530084ffde",
+      "dependsOn": [
+        "US1",
+        "US2"
+      ]
+    }
+  ]
+}

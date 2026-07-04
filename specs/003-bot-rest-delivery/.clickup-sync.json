@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1",
+  "feature": "003-bot-rest-delivery",
+  "workspaceId": "90141363864",
+  "spaceId": "90146179804",
+  "listId": "901417496906",
+  "statusMapping": {
+    "not-started": "backlog",
+    "in-progress": "in development",
+    "done": "shipped"
+  },
+  "card": {
+    "id": "86barauxw",
+    "hash": "sha256:645959d80558b08b097695c25bef033aa57ce1fe8a362e8582409a9f65086f59"
+  },
+  "userStories": [
+    {
+      "us": "US1",
+      "id": "86baravcu",
+      "hash": "sha256:07fba7dcacd29ce141f382779a33c402e93eff8d9b015587cce7416dee380026",
+      "dependsOn": []
+    },
+    {
+      "us": "US2",
+      "id": "86baravdt",
+      "hash": "sha256:3d58694656c315ccaf7845c63fbdafaf5270297af8f9433a3c75b532ce72df4f",
+      "dependsOn": [
+        "US1"
+      ]
+    }
+  ]
+}

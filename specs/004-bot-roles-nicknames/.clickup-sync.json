@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1",
+  "feature": "004-bot-roles-nicknames",
+  "workspaceId": "90141363864",
+  "spaceId": "90146179804",
+  "listId": "901417496906",
+  "statusMapping": {
+    "not-started": "backlog",
+    "in-progress": "in development",
+    "done": "shipped"
+  },
+  "card": {
+    "id": "86barauz1",
+    "hash": "sha256:274e2a3f391ff96b4f53ee574dcc515cf3b8718fe52800534641251abfe6c0af"
+  },
+  "userStories": [
+    {
+      "us": "US1",
+      "id": "86baravfb",
+      "hash": "sha256:3fc74bcebec5f71846f52c04a9b05116de8be158dd37a8f11de3ee7330c608f4",
+      "dependsOn": []
+    },
+    {
+      "us": "US2",
+      "id": "86baravgp",
+      "hash": "sha256:2e74cf9cca35f82d90ca2918131225eedde361912d311b2689ea51615cdb1cdf",
+      "dependsOn": [
+        "US1"
+      ]
+    },
+    {
+      "us": "US3",
+      "id": "86baravhk",
+      "hash": "sha256:759c055cd0ddc51f65f90b730f3c6c332171a41bd128bf0b8a15d59a5fe7f4a3",
+      "dependsOn": [
+        "US1",
+        "US2"
+      ]
+    },
+    {
+      "us": "US4",
+      "id": "86baravjy",
+      "hash": "sha256:4e3fd419bf9b9108940868fef1305a88aa8e48be6d6c02e8b4eada56144f0e9d",
+      "dependsOn": [
+        "US1",
+        "US2",
+        "US3"
+      ]
+    }
+  ]
+}
