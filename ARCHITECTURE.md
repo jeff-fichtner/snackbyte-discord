@@ -34,25 +34,29 @@ Future work extends the _instances_, not the patterns.
 
 ## 2. The bot's interaction surface is an extension axis (future bot-depth design)
 
-The slash-command path exists, and the capability/adapter split is now proven in code (the
-self-service role/nickname capabilities live in `src/bot/members/`, invoked by thin slash-command
-adapters). The hub must still expose those capabilities through **other** Discord interaction styles
-— text-prefix commands (`!role`), message components (buttons / selects), context menus, modals, and
-reaction-driven actions — and stay open to styles Discord adds later. Interaction style is a
-**pluggable axis**, the same way inbound sources are: one capability (e.g. self-assign a role) can be
-offered through several styles at once, all delegating to the one shared piece of logic.
+The capability/adapter split is proven in code across **two** interaction styles — slash commands
+and reactions — over the same shared logic (the role/nickname capabilities in `src/bot/members/`,
+invoked by thin slash-command adapters and by the reaction adapter in
+`src/bot/events/message-reaction.ts`). The hub must still expose those capabilities through the
+**remaining** Discord interaction styles — text-prefix commands (`!role`), message components
+(buttons / selects), context menus, and modals — and stay open to styles Discord adds later.
+Interaction style is a **pluggable axis**, the same way inbound sources are: one capability (e.g.
+self-assign a role) can be offered through several styles at once, all delegating to the one shared
+piece of logic.
 
 The bot layers a small set of **interaction-handler registries** over the gateway, one per
-style, each populated by drop-in self-registering modules and dispatched generically:
+style, each populated by drop-in self-registering modules and dispatched generically. The
+remaining styles to add:
 
-- slash / chat-input commands → dispatched from `interactionCreate`
 - text-prefix commands → dispatched from `messageCreate` (requires the privileged Message
   Content intent, so this style stays **optional and isolated** — the bot boots and all other
   styles work with it OFF)
 - message components (buttons, selects) → dispatched from `interactionCreate` by `customId`
 - context-menu commands (user / message) → registered alongside slash commands
 - modals → dispatched from `interactionCreate` by `customId`
-- reaction actions → dispatched from `messageReactionAdd` / `messageReactionRemove`
+
+(The slash and reaction dispatchers — `interactionCreate` and `messageReactionAdd`/`Remove` — are
+already built and follow the same pattern.)
 
 The shared rule (Principle I): **a capability is logic; an interaction style is an adapter onto
 that logic.** Adding a style = one registry + one dispatch binding; adding a capability = one
@@ -83,15 +87,17 @@ These already hold in the built core; new features must preserve them.
 editor (inspect routes, view/replay `delivery_log`, and an in-Discord operator command to curate
 the self-assignable-role whitelist).
 
-**Phase 3 — Bot depth, remaining (BED-BOT parity is a requirement, not an example).** Core parity —
-self-assignable roles, the assignable-role list, self-service nicknames, and the operator-editable
-whitelist safety model — is built. What remains in this phase, exposed through the interaction-handler
+**Phase 3 — Bot depth, remaining.** BED-BOT parity is built (self-assignable roles, the
+assignable-role list, self-service nicknames, the operator-editable whitelist safety model),
+plus reaction-roles and cross-member moderation (`/nick` and `/role` acting on other members,
+native-permission-gated). What remains in this phase, exposed through the interaction-handler
 registries (§2) over the shared capability logic already in place:
 
-- **reaction-roles** (assign a role by reacting) and other interaction styles (buttons / selects,
-  text-prefix) over the existing role/nickname capabilities;
-- **moderation** (requires the privileged Message Content intent — opt-in and isolated), including
-  growing `/nick` to nickname *other* members (the piece Discord's built-in `/nick` can't do);
+- **remaining interaction styles** — buttons / selects and text-prefix commands over the existing
+  role/nickname capabilities (slash and reactions are done);
+- **member sanctions** — kick / ban / timeout (the destructive moderation surface; needs
+  Kick/Ban/Moderate-Members permissions, but not Message Content unless later text-scanning is
+  added);
 - **`bot_state`/kv** for free-form per-guild config, and **scheduled jobs** reusing the delivery
   service.
 

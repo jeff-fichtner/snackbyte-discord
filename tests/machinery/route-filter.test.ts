@@ -2,7 +2,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { passesFilter } from '../../src/routing/filter.js';
 import { dispatch } from '../../src/routing/engine.js';
-import type { Repository, DeliveryRecordInput } from '../../src/db/repository.js';
+import type {
+  Repository,
+  DeliveryRecordInput,
+  ReactionRoleMapping,
+} from '../../src/db/repository.js';
 import type { RouteRecord, DeliveryTarget } from '../../src/routing/types.js';
 import type { DeliveryService, DiscordMessage } from '../../src/discord/delivery.js';
 import type { CanonicalEvent } from '../../src/sources/types.js';
@@ -67,6 +71,9 @@ class FakeRepo implements Repository {
     this.records.push(input);
   }
   async listSelfAssignableRoles(): Promise<string[]> {
+    return [];
+  }
+  async listReactionRoleMappings(): Promise<ReactionRoleMapping[]> {
     return [];
   }
   async ping(): Promise<boolean> {

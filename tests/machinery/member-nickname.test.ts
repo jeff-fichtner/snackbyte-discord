@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
-import { setOwnNickname } from '../../src/bot/members/nickname.js';
+import { setOwnNickname, setMemberNickname } from '../../src/bot/members/nickname.js';
 import type { NicknameMemberView } from '../../src/bot/members/nickname.js';
 
 function member(overrides: Partial<NicknameMemberView> = {}): NicknameMemberView {
@@ -79,5 +79,43 @@ describe('setOwnNickname — validation + bot-position guard', () => {
     });
     const out = await setOwnNickname(m, 'Valid');
     expect(out.outcome).toBe('refused');
+  });
+});
+
+describe('setMemberNickname — the moderation path (acts on a target member view)', () => {
+  it('sets a target member nickname within the limit', async () => {
+    const target = member();
+    const out = await setMemberNickname(target, 'Chief');
+    expect(out.outcome).toBe('set');
+    expect(target.setNickname).toHaveBeenCalledWith('Chief');
+  });
+
+  it('resets a target member nickname (undefined → clear)', async () => {
+    const target = member();
+    const out = await setMemberNickname(target, undefined);
+    expect(out.outcome).toBe('cleared');
+    expect(target.setNickname).toHaveBeenCalledWith(null);
+  });
+
+  it('refuses an over-limit or whitespace-only value for a target — no change', async () => {
+    const target = member();
+    expect((await setMemberNickname(target, 'x'.repeat(33))).outcome).toBe('refused');
+    expect((await setMemberNickname(target, '   ')).outcome).toBe('refused');
+    expect(target.setNickname).not.toHaveBeenCalled();
+  });
+
+  it('refuses when the TARGET outranks the bot — no change (bot-position guard on the target)', async () => {
+    const target = member({ botOutranksMember: false });
+    const out = await setMemberNickname(target, 'Nope');
+    expect(out.outcome).toBe('refused');
+    expect(out.outcome === 'refused' && out.reason).toBe('bot-cannot-manage');
+    expect(target.setNickname).not.toHaveBeenCalled();
+  });
+
+  it('refuses when the bot lacks Manage Nicknames — no change', async () => {
+    const target = member({ botCanManageNicknames: false });
+    const out = await setMemberNickname(target, 'Nope');
+    expect(out.outcome).toBe('refused');
+    expect(target.setNickname).not.toHaveBeenCalled();
   });
 });

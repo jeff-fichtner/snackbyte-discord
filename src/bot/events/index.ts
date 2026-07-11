@@ -6,6 +6,9 @@
 import { registerEvent } from './registry.js';
 import { interactionCreate } from './interaction-create.js';
 import { guildMemberAdd } from './guild-member-add.js';
+import { messageReactionAdd, messageReactionRemove } from './message-reaction.js';
 
 registerEvent(interactionCreate);
 registerEvent(guildMemberAdd);
+registerEvent(messageReactionAdd);
+registerEvent(messageReactionRemove);

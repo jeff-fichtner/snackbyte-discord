@@ -24,6 +24,19 @@ export interface DeliveryRecordInput {
   error?: string;
 }
 
+/**
+ * An operator-curated reaction-role mapping: reacting with `emojiKey` on `messageId` grants
+ * `roleId`. `emojiKey` is the emoji's stable identity — a custom emoji's numeric id, or a standard
+ * emoji's unicode codepoint string — so the match survives a custom-emoji rename. A mapping is
+ * additive configuration only: the role must also be on the guild's self-assignable whitelist for a
+ * reaction to grant it.
+ */
+export interface ReactionRoleMapping {
+  messageId: string;
+  emojiKey: string;
+  roleId: string;
+}
+
 export interface Repository {
   /** Fetch a source row by slug (for enablement + its secret reference), or null. */
   getSourceRecord(slug: string): Promise<SourceRecord | null>;
@@ -33,6 +46,8 @@ export interface Repository {
   getTarget(id: string): Promise<DeliveryTarget | null>;
   /** Role ids an operator has marked self-assignable in this guild (empty when none). */
   listSelfAssignableRoles(guildId: string): Promise<string[]>;
+  /** Reaction-role mappings an operator has configured in this guild (empty when none). */
+  listReactionRoleMappings(guildId: string): Promise<ReactionRoleMapping[]>;
   /** True if this (route, event) was already delivered (idempotency pre-check). */
   alreadyDelivered(routeId: string, dedupeKey: string): Promise<boolean>;
   /** Record a delivery attempt outcome; the unique (route_id, dedupe_key) guards dups. */

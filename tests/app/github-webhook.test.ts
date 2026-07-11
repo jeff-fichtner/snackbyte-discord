@@ -16,7 +16,7 @@ process.env.CLICKUP_WEBHOOK_SECRET = CU_SECRET;
 import { createApp } from '../../src/server.js';
 import { setContext } from '../../src/core/context.js';
 import '../../src/sources/index.js'; // register clickup + github adapters
-import type { Repository } from '../../src/db/repository.js';
+import type { Repository, ReactionRoleMapping } from '../../src/db/repository.js';
 import type { RouteRecord, DeliveryTarget } from '../../src/routing/types.js';
 import type { DeliveryService } from '../../src/discord/delivery.js';
 
@@ -46,6 +46,9 @@ class FakeRepo implements Repository {
   }
   async recordDelivery(): Promise<void> {}
   async listSelfAssignableRoles(): Promise<string[]> {
+    return [];
+  }
+  async listReactionRoleMappings(): Promise<ReactionRoleMapping[]> {
     return [];
   }
   async ping(): Promise<boolean> {

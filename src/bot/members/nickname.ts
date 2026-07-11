@@ -21,12 +21,13 @@ export type NicknameOutcome =
   | { outcome: 'refused'; reason: 'invalid-input' | 'bot-cannot-manage' };
 
 /**
- * Set the invoking member's nickname to `value`, or reset it (clear) when `value` is undefined.
- * A provided value must be ≤ 32 characters and not whitespace-only. The bot-position guard applies
- * to both set and reset (a reset when the member outranks the bot is still refused, not attempted).
- * Never throws for an expected failure.
+ * Set a member's nickname to `value`, or reset it (clear) when `value` is undefined. A provided
+ * value must be ≤ 32 characters and not whitespace-only. The bot-position guard applies to both set
+ * and reset (a change when the member outranks the bot is refused, not attempted). Never throws for
+ * an expected failure. The member view is target-agnostic — it carries whether the bot outranks
+ * *this* member — so this is the shared core of both the self and cross-member paths.
  */
-export async function setOwnNickname(
+async function applyNickname(
   member: NicknameMemberView,
   value: string | undefined,
 ): Promise<NicknameOutcome> {
@@ -46,4 +47,27 @@ export async function setOwnNickname(
   } catch {
     return { outcome: 'refused', reason: 'bot-cannot-manage' };
   }
+}
+
+/**
+ * Set the invoking member's own nickname (the self-service path — no moderator standing needed).
+ * Acts only on the member passed in.
+ */
+export async function setOwnNickname(
+  member: NicknameMemberView,
+  value: string | undefined,
+): Promise<NicknameOutcome> {
+  return applyNickname(member, value);
+}
+
+/**
+ * Set another member's nickname (the moderation path). Identical validation and bot-position guard
+ * as the self path, applied to the target member's view. The caller is responsible for the
+ * moderator-standing check before invoking this; the bot-position guard here is the second gate.
+ */
+export async function setMemberNickname(
+  member: NicknameMemberView,
+  value: string | undefined,
+): Promise<NicknameOutcome> {
+  return applyNickname(member, value);
 }

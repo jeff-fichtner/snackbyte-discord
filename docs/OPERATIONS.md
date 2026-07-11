@@ -171,9 +171,9 @@ whitelist:
 - `/nick [nickname]` — set your server nickname (max 32 chars), or reset it by leaving it blank.
 
 **Note on `/nick` vs. Discord's built-in `/nick`**: Discord ships a built-in `/nick` that sets the
-invoker's *own* nickname (gated by the "Change Nickname" permission). Ours overlaps it for self-nick
-and is intended to grow into the superset (a later spec adds nicknaming *other* members, which the
-built-in cannot do). If you want ours to be the only `/nick` members see, remove **Change Nickname**
+invoker's _own_ nickname (gated by the "Change Nickname" permission). Ours is the superset: it does
+self-nick _and_ nicknames **other** members (see "Reaction-roles & moderation" below), which the
+built-in cannot do. If you want ours to be the only `/nick` members see, remove **Change Nickname**
 from `@everyone` (Server Settings → Roles → @everyone) — the built-in then disappears for members and
 they change nicknames only through the bot. Otherwise both appear in the picker (distinguished by the
 app icon); ours still works. This is a per-server operator choice; the app cannot un-register a
@@ -190,8 +190,62 @@ bot, or a permission is missing, the command refuses safely with a diagnosable m
 nothing — it never half-acts. Whitelisting an admin role does not let a member escalate: the
 bot-position guard still refuses anything above the bot, so position the bot's role deliberately.
 
-Only the `Guilds` + `GuildMembers` gateway intents are used (no Message Content). After adding new
-commands, run `npm run deploy:commands`.
+The self-service commands use the `Guilds` + `GuildMembers` gateway intents (reaction-roles add one
+more — see below). **Message Content is never used.** After adding new commands, run
+`npm run deploy:commands`.
+
+## Reaction-roles & moderation
+
+Two capabilities layered over the same role/nickname logic and the same whitelist.
+
+### Reaction-roles
+
+Members get a whitelisted role by **reacting** to an operator-configured message, and lose it by
+removing the reaction (the reaction is the source of truth — un-reacting removes the role even if the
+member also self-assigned it). No command is typed.
+
+**Configure a mapping** (operator): add a row to the `reaction_role_mappings` table:
+
+| Column       | Value                                                                            |
+| ------------ | -------------------------------------------------------------------------------- |
+| `guild_id`   | the server id                                                                    |
+| `message_id` | the message to react on (Developer Mode → Copy Message ID)                       |
+| `emoji_key`  | **unicode**: the emoji character, e.g. `🔔` · **custom**: the emoji's numeric id |
+| `emoji_kind` | `unicode` or `custom` (must match `emoji_key`)                                   |
+| `role_id`    | the role to grant                                                                |
+
+Edited live, no redeploy (like routes/whitelist). A `(guild, message, emoji)` maps to exactly one
+role; the same role may appear in several mappings.
+
+**Authorization is the intersection**: a reaction grants a role only when a mapping exists **and**
+the role is on the `self_assignable_roles` whitelist. A mapping to a non-whitelisted role is a
+silent no-op — a mapping never bypasses the whitelist, and the app never auto-adds a role to it. So
+whitelisting a role (as above) is required in addition to the mapping.
+
+**Gateway intent**: reaction-roles add the `GuildMessageReactions` intent and the Message/Reaction
+partials (so reactions on older, un-cached messages still work). **Message Content stays off** — no
+privileged Message Content is needed or requested. In the Discord Developer Portal the bot needs the
+**Server Members Intent** (already on from 004); it does **not** need Message Content.
+
+### Moderating other members
+
+Members with the right permission act on **other** members through the same commands:
+
+- `/nick [nickname] member:@X` — set or reset member @X's nickname. Requires the invoker to have
+  **Manage Nicknames**. Without a `member`, it changes your own nickname (unchanged self-service).
+- `/role role:@R member:@X` — toggle role @R on member @X. Requires the invoker to have **Manage
+  Roles**. Not limited to the self-assignable whitelist (moderators manage roles a member could not
+  self-assign). Without a `member`, it toggles a whitelisted role on yourself (unchanged).
+
+A member without the permission is refused when they target someone else, but keeps their own
+self-service ability. Two hierarchy guards always apply and refuse safely (never a half-action):
+
+- **Bot-position**: the bot must be above the target role/member and hold the relevant permission.
+- **Invoker-position** (role only): a moderator cannot grant a role at or above their **own** highest
+  role — mirrors Discord's own rule and prevents privilege escalation.
+
+Moderation reads its target/role/nickname from command options, not message text, so it needs **no**
+new gateway intent and **no** Message Content.
 
 ## Networking (how the domains are wired)
 

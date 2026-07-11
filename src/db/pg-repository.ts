@@ -4,7 +4,12 @@
  * per event (no cache) so operator edits take effect on the next event with no restart.
  */
 import type { Pool } from 'pg';
-import type { Repository, DeliveryRecordInput, SourceRecord } from './repository.js';
+import type {
+  Repository,
+  DeliveryRecordInput,
+  SourceRecord,
+  ReactionRoleMapping,
+} from './repository.js';
 import type { RouteRecord, DeliveryTarget } from '../routing/types.js';
 
 export class PgRepository implements Repository {
@@ -64,6 +69,20 @@ export class PgRepository implements Repository {
       [guildId],
     );
     return rows.map((r) => r.role_id);
+  }
+
+  async listReactionRoleMappings(guildId: string): Promise<ReactionRoleMapping[]> {
+    // Read live per reaction (no cache) so an operator add/remove governs the next reaction with no
+    // restart — the same freshness contract as routes and the whitelist.
+    const { rows } = await this.pool.query(
+      `SELECT message_id, emoji_key, role_id FROM reaction_role_mappings WHERE guild_id = $1`,
+      [guildId],
+    );
+    return rows.map((r) => ({
+      messageId: r.message_id,
+      emojiKey: r.emoji_key,
+      roleId: r.role_id,
+    }));
   }
 
   async alreadyDelivered(routeId: string, dedupeKey: string): Promise<boolean> {

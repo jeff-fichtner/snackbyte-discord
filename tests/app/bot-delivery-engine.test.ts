@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest';
 import { dispatch } from '../../src/routing/engine.js';
-import type { Repository, DeliveryRecordInput } from '../../src/db/repository.js';
+import type {
+  Repository,
+  DeliveryRecordInput,
+  ReactionRoleMapping,
+} from '../../src/db/repository.js';
 import type { RouteRecord, DeliveryTarget } from '../../src/routing/types.js';
 import type { DeliveryService, DiscordMessage } from '../../src/discord/delivery.js';
 import type { CanonicalEvent } from '../../src/sources/types.js';
@@ -59,6 +63,9 @@ class FakeRepo implements Repository {
     if (input.status === 'ok') this.delivered.add(`${input.routeId}:${input.dedupeKey}`);
   }
   async listSelfAssignableRoles(): Promise<string[]> {
+    return [];
+  }
+  async listReactionRoleMappings(): Promise<ReactionRoleMapping[]> {
     return [];
   }
   async ping(): Promise<boolean> {
