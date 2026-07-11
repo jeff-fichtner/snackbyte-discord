@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1",
+  "feature": "005-reaction-roles-moderation",
+  "workspaceId": "90141363864",
+  "spaceId": "90146179804",
+  "listId": "901417496906",
+  "statusMapping": {
+    "not-started": "backlog",
+    "in-progress": "in development",
+    "done": "shipped"
+  },
+  "card": {
+    "id": "86bawb9b4",
+    "hash": "sha256:d35a1642ad6971f82211278783173a43d298ac067722810d3690add71c9cef00"
+  },
+  "userStories": [
+    {
+      "us": "US1",
+      "id": "86bawb9e2",
+      "hash": "sha256:cabf982b0fa7871dde32a9c919f63d5b285a9fa0c115bcbcca211edc86b69f4d",
+      "dependsOn": []
+    },
+    {
+      "us": "US2",
+      "id": "86bawb9eg",
+      "hash": "sha256:48218ab55d7618951bafaecf2fb478fa60b7373b04e4b2aa13e2c676b6aab4ea",
+      "dependsOn": [
+        "US1"
+      ]
+    },
+    {
+      "us": "US3",
+      "id": "86bawb9fd",
+      "hash": "sha256:4d14b01d1ae8b824baedfd81da9198c1b53ac6abfcc7b7f8407965b0137858e4",
+      "dependsOn": [
+        "US1",
+        "US2"
+      ]
+    },
+    {
+      "us": "US4",
+      "id": "86bawb9fw",
+      "hash": "sha256:a65e795850f4ca719210423067b34af2962938c8eaba041d18572bebfc42d5a2",
+      "dependsOn": [
+        "US1",
+        "US2",
+        "US3"
+      ]
+    }
+  ]
+}
