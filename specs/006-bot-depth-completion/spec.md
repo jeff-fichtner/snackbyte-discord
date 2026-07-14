@@ -8,6 +8,22 @@
 
 **Input**: User description: "Bot-depth completion — as wide a swath as possible without introducing wildly out-of-scope architecture. (1) The full STATELESS moderation surface: timeout (+clear), kick, the ban cluster (ban present member, pre-emptive ban by id, unban, list bans, bulk ban, message-delete window), and message/channel moderation (bulk purge, slowmode, lock/unlock, pin/unpin) — all native-permission-gated, with audit-log reasons and hierarchy guards, failing safe. (2) Additional interaction styles over the EXISTING role/nickname capabilities — message components (buttons/selects) and text-prefix commands — each a new adapter onto the same capability logic reusing the same authorization gates. Text-prefix requires the Message Content intent, kept opt-in and isolated. DEFERRED (needs new persistent-store architecture): a warnings/infractions system, modlog history, auto-escalation, and auto-expiring temp-bans — these require durable state and land after the 007 storage work. Also deferred to 007: bot_state/kv and scheduled jobs."
 
+## Clarifications
+
+### Session 2026-07-11
+
+- Q: Is the ban surface one overloaded `/ban` command or separate commands? → A: **One unified
+  `/ban`** command carrying `member`, `user_id`, and `user_ids` options (plus `reason` and
+  `delete_messages`); the command determines the mode (present-ban / pre-emptive ban-by-id / bulk)
+  from which option is supplied. `/unban` and `/bans` (list) remain their own commands. Keeps the ban
+  cluster one mental model, consistent with the "designed as one ban model" scope decision.
+- Q: Is text-prefix enablement per-guild or process-wide? → A: **Process-wide** — one deployment
+  on/off switch enables the text-prefix style AND requests the Message Content intent for the whole
+  bot; off by default. This is honest about the privilege cost (the Message Content intent is
+  per-connection/process, not per-guild — Discord cannot scope it per server), so "off" genuinely does
+  not request the intent. A per-guild toggle is rejected as misleading (the intent would be on
+  process-wide regardless).
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -177,7 +193,8 @@ does nothing — reusing the same whitelist gate as the slash and reaction style
 
 ### User Story 6 - A member uses a text-prefix command (Priority: P3)
 
-On a server that has opted into the text-prefix style, a member types a prefixed message command
+On a deployment that has opted into the text-prefix style (a process-wide on/off switch, off by
+default), a member types a prefixed message command
 (e.g. `!role Announcements`, `!roles`, `!nick NewName`) and the existing capability runs — the same
 result as the slash command, through a text message. This style requires the privileged
 message-content capability, kept opt-in and isolated: the bot boots and every other style works with
@@ -248,7 +265,10 @@ messages do nothing and every other style still works.
 - **FR-003**: A moderator MUST be able to manage the ban list beyond present members: pre-emptively
   ban a user by id (blocks future join), unban a user by id, list current bans with reasons, and bulk
   ban multiple ids in one action — all gated by the native ban permission. A bulk action MUST report
-  per-id outcomes and MUST NOT let one bad id abort the rest.
+  per-id outcomes and MUST NOT let one bad id abort the rest. The ban actions (present-member ban,
+  pre-emptive ban-by-id, bulk ban) MUST be exposed as ONE unified `/ban` command whose supplied option
+  (`member` / `user_id` / `user_ids`) selects the mode; `unban` and `bans` (list) are separate
+  commands.
 - **FR-004**: Every sanction MUST record an optional operator-supplied reason to the server's audit
   log, so the action is attributable.
 - **FR-005**: Every member sanction MUST enforce the hierarchy guards before acting: the bot can
@@ -283,12 +303,18 @@ messages do nothing and every other style still works.
   gates (the self-assignable whitelist, the bot-position guard) unchanged — a component or text
   command can never grant a role the whitelist does not allow, and adding a style MUST NOT require
   changing the capability logic (a new input adapter only).
-- **FR-014**: Component and text-prefix bindings/config MUST be operator-editable runtime data
-  (changeable without a code change or redeploy), consistent with routes, the whitelist, and
-  reaction-role mappings; the system MUST NOT auto-create bindings.
+- **FR-014**: Component **bindings** MUST be operator-editable runtime data (changeable without a code
+  change or redeploy), consistent with routes, the whitelist, and reaction-role mappings; the system
+  MUST NOT auto-create bindings. (Text-prefix *enablement* is the exception: it is a process-wide
+  deploy switch governed by FR-015, not runtime-editable data, because it toggles a per-connection
+  privileged intent.)
 - **FR-015**: The text-prefix style MUST require the privileged message-content capability and keep it
   opt-in and isolated: the bot MUST boot and every other style (slash, reaction, components) MUST
-  function with message-content OFF. Enabling text-prefix MUST be a deliberate operator/deploy choice.
+  function with message-content OFF. Enabling text-prefix MUST be a deliberate **process-wide** deploy
+  choice (a single on/off switch, off by default) that both activates the style AND requests the
+  message-content capability; when off, the capability MUST NOT be requested at all. Enablement is NOT
+  per-guild — the underlying message-content capability is per-connection, so a per-guild toggle cannot
+  reduce the privilege footprint.
 
 **Cross-cutting**
 
@@ -327,9 +353,10 @@ messages do nothing and every other style still works.
   select-menu option, identified stably) to a self-assignable role. Scoped to a server; presence plus
   a matching whitelist entry is the whole authorization; never auto-created. Analogous to the 005
   reaction-role mapping, for the component style.
-- **Text-prefix style configuration**: the operator/deploy choice enabling the text-prefix style (and
-  its required message-content capability) for a server, plus the prefix it listens for. Absent by
-  default (the style is off).
+- **Text-prefix style configuration**: the **process-wide** deploy choice enabling the text-prefix
+  style (and its required message-content capability) for the whole bot, plus the prefix it listens
+  for. A single on/off switch, off by default (the style and the capability are both absent when off);
+  not per-guild.
 - **Self-assignable role entry** (existing, 004): the whitelist every role-granting style intersects
   with. Unchanged; reused as the authorization for components and text-prefix.
 - **Moderator** / **Target**: the actor and the subject (member, message, or channel) of a moderation

@@ -46,4 +46,13 @@ work decomposes into independently-shippable increments (sanctions → message/c
 style → text-prefix style), and `/speckit-tasks` may warrant phasing so an MVP (US1/US2) lands before
 the P2/P3 breadth.
 
-Ready for `/speckit-plan` (or `/speckit-clarify` for further refinement).
+Clarify session (2026-07-11, 2 questions) — both resolved and integrated; no checklist state change
+(they sharpened testability of already-passing items):
+1. **Ban command surface** — ONE unified `/ban` (member / user_id / user_ids options select the mode);
+   `/unban` and `/bans` separate. Integrated into FR-003.
+2. **Text-prefix enablement** — PROCESS-WIDE on/off switch (off by default) that gates both the style
+   and the Message Content intent; not per-guild (the intent is per-connection). Integrated into
+   FR-015, US6, and the entity — resolving the earlier spec/plan wording tension. The plan already
+   assumed both answers, so no plan rework is needed.
+
+Plan + Phase-0/1 artifacts already generated. Ready for `/speckit-tasks`.
