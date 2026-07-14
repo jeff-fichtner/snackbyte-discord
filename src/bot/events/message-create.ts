@@ -16,32 +16,13 @@ import { childLogger } from '../../core/logger.js';
 import { getContext } from '../../core/context.js';
 import { loadConfig } from '../../config.js';
 import { parseTextCommand } from '../text/prefix.js';
-import {
-  toggleSelfRole,
-  listSelfAssignableRoles,
-  type MemberView,
-  type RoleView,
-} from '../members/roles.js';
+import { toggleSelfRole, listSelfAssignableRoles, type RoleView } from '../members/roles.js';
+import { roleMemberView } from '../members/member-view.js';
 import { setOwnNickname, type NicknameMemberView } from '../members/nickname.js';
 import type { EventHandler } from './types.js';
 
 const log = childLogger('bot-text');
 const { textPrefix, textPrefixEnabled } = loadConfig();
-
-function roleMemberView(member: GuildMember): MemberView {
-  const me = member.guild.members.me;
-  return {
-    hasRole: (roleId) => member.roles.cache.has(roleId),
-    addRole: async (roleId) => {
-      await member.roles.add(roleId);
-    },
-    removeRole: async (roleId) => {
-      await member.roles.remove(roleId);
-    },
-    botHighestPosition: me?.roles.highest.position ?? 0,
-    botCanManageRoles: me?.permissions.has(PermissionFlagsBits.ManageRoles) ?? false,
-  };
-}
 
 function nicknameMemberView(member: GuildMember): NicknameMemberView {
   const me = member.guild.members.me;

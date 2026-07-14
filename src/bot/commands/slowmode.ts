@@ -44,15 +44,15 @@ export const slowmodeCommand: SlashCommand = {
     const result = await setSlowmode(view, seconds);
 
     let content: string;
-    if (result.outcome === 'done') {
-      content = seconds === 0 ? 'Slowmode cleared.' : `Slowmode set to ${seconds}s.`;
-    } else {
+    if (result.outcome === 'refused') {
       content =
         result.reason === 'unsupported-channel'
           ? "This channel type doesn't support slowmode."
           : result.reason === 'invalid-input'
             ? `Seconds must be between 0 and ${MAX_SLOWMODE_SECONDS}.`
             : "Couldn't set slowmode here.";
+    } else {
+      content = seconds === 0 ? 'Slowmode cleared.' : `Slowmode set to ${seconds}s.`;
     }
     await interaction.editReply({ content });
   },

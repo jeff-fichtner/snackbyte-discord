@@ -34,13 +34,13 @@ function lockHandler(locked: boolean) {
     const result = await setChannelLock(view, locked, { reason });
 
     let content: string;
-    if (result.outcome === 'done') {
-      content = locked ? 'Channel locked — members can no longer send.' : 'Channel unlocked.';
-    } else {
+    if (result.outcome === 'refused') {
       content =
         result.reason === 'unsupported-channel'
           ? "This channel type can't be locked."
           : `Couldn't ${locked ? 'lock' : 'unlock'} this channel.`;
+    } else {
+      content = locked ? 'Channel locked — members can no longer send.' : 'Channel unlocked.';
     }
     await interaction.editReply({ content });
   };

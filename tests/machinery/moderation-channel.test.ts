@@ -125,13 +125,29 @@ describe('setChannelLock', () => {
 });
 
 describe('setMessagePinned', () => {
-  it('pins and unpins a message, and surfaces failures as refusals', async () => {
-    const msg = { pin: vi.fn(async () => {}), unpin: vi.fn(async () => {}) };
-    expect((await setMessagePinned(msg, true)).outcome).toBe('done');
-    expect(msg.pin).toHaveBeenCalled();
-    expect((await setMessagePinned(msg, false)).outcome).toBe('done');
+  it('pins a not-pinned message and unpins a pinned one', async () => {
+    const unpinnedMsg = { pinned: false, pin: vi.fn(async () => {}), unpin: vi.fn(async () => {}) };
+    expect((await setMessagePinned(unpinnedMsg, true)).outcome).toBe('done');
+    expect(unpinnedMsg.pin).toHaveBeenCalled();
 
+    const pinnedMsg = { pinned: true, pin: vi.fn(async () => {}), unpin: vi.fn(async () => {}) };
+    expect((await setMessagePinned(pinnedMsg, false)).outcome).toBe('done');
+    expect(pinnedMsg.unpin).toHaveBeenCalled();
+  });
+
+  it('is idempotent — pinning an already-pinned message (or unpinning a not-pinned one) is a no-op', async () => {
+    const pinnedMsg = { pinned: true, pin: vi.fn(async () => {}), unpin: vi.fn(async () => {}) };
+    expect((await setMessagePinned(pinnedMsg, true)).outcome).toBe('unchanged');
+    expect(pinnedMsg.pin).not.toHaveBeenCalled();
+
+    const unpinnedMsg = { pinned: false, pin: vi.fn(async () => {}), unpin: vi.fn(async () => {}) };
+    expect((await setMessagePinned(unpinnedMsg, false)).outcome).toBe('unchanged');
+    expect(unpinnedMsg.unpin).not.toHaveBeenCalled();
+  });
+
+  it('surfaces an API failure as a refusal', async () => {
     const bad = {
+      pinned: false,
       pin: vi.fn(async () => {
         throw new Error('x');
       }),

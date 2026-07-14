@@ -11,17 +11,16 @@
  */
 import {
   Events,
-  PermissionFlagsBits,
   type MessageReaction,
   type PartialMessageReaction,
   type User,
   type PartialUser,
-  type GuildMember,
 } from 'discord.js';
 import { childLogger } from '../../core/logger.js';
 import { getContext } from '../../core/context.js';
 import { resolveReactionRole } from '../reactions/resolve.js';
-import { grantSelfRole, revokeSelfRole, type MemberView, type RoleView } from '../members/roles.js';
+import { grantSelfRole, revokeSelfRole, type RoleView } from '../members/roles.js';
+import { roleMemberView } from '../members/member-view.js';
 import type { EventHandler } from './types.js';
 
 const log = childLogger('bot-reaction');
@@ -29,21 +28,6 @@ const log = childLogger('bot-reaction');
 /** The stable emoji identity used to match a mapping: a custom emoji's id, or the unicode char. */
 function emojiKey(reaction: MessageReaction | PartialMessageReaction): string | null {
   return reaction.emoji.id ?? reaction.emoji.name ?? null;
-}
-
-function memberView(member: GuildMember): MemberView {
-  const me = member.guild.members.me;
-  return {
-    hasRole: (roleId) => member.roles.cache.has(roleId),
-    addRole: async (roleId) => {
-      await member.roles.add(roleId);
-    },
-    removeRole: async (roleId) => {
-      await member.roles.remove(roleId);
-    },
-    botHighestPosition: me?.roles.highest.position ?? 0,
-    botCanManageRoles: me?.permissions.has(PermissionFlagsBits.ManageRoles) ?? false,
-  };
 }
 
 function roleView(role: { id: string; name: string; position: number }): RoleView {
@@ -104,7 +88,7 @@ async function handleReaction(
   const member = await guild.members.fetch(user.id).catch(() => null);
   if (!member) return; // reactor not a resolvable member — ignore
 
-  const view = memberView(member);
+  const view = roleMemberView(member);
   const rv = roleView(role);
   const result =
     direction === 'grant'

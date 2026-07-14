@@ -7,33 +7,14 @@
  * option is an independently bindable component). Operators name their components with the "role:"
  * prefix so this handler claims them.
  */
-import {
-  MessageFlags,
-  PermissionFlagsBits,
-  type MessageComponentInteraction,
-  type GuildMember,
-} from 'discord.js';
+import { MessageFlags, type MessageComponentInteraction, type GuildMember } from 'discord.js';
 import { getContext } from '../../core/context.js';
 import { resolveComponentRole } from './resolve.js';
-import { toggleSelfRole, type MemberView, type RoleView } from '../members/roles.js';
+import { toggleSelfRole, type RoleView } from '../members/roles.js';
+import { roleMemberView } from '../members/member-view.js';
 import type { ComponentHandler } from './registry.js';
 
 const PREFIX = 'role:';
-
-function memberView(member: GuildMember): MemberView {
-  const me = member.guild.members.me;
-  return {
-    hasRole: (roleId) => member.roles.cache.has(roleId),
-    addRole: async (roleId) => {
-      await member.roles.add(roleId);
-    },
-    removeRole: async (roleId) => {
-      await member.roles.remove(roleId);
-    },
-    botHighestPosition: me?.roles.highest.position ?? 0,
-    botCanManageRoles: me?.permissions.has(PermissionFlagsBits.ManageRoles) ?? false,
-  };
-}
 
 /** The stable component key: for a select, customId + the chosen value; for a button, the customId. */
 function componentKey(interaction: MessageComponentInteraction): string {
@@ -79,7 +60,7 @@ export const roleComponent: ComponentHandler = {
     }
 
     const roleView: RoleView = { id: role.id, name: role.name, position: role.position };
-    const result = await toggleSelfRole(memberView(member), roleView, whitelistRoleIds);
+    const result = await toggleSelfRole(roleMemberView(member), roleView, whitelistRoleIds);
 
     let content: string;
     switch (result.outcome) {

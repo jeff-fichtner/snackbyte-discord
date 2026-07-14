@@ -182,7 +182,8 @@ describe('ban-list management (US3)', () => {
     expect(results).toEqual([
       { userId: ID_A, outcome: 'banned' },
       { userId: ID_B, outcome: 'already-banned' },
-      { userId: 'bad-id', outcome: 'refused' },
+      // A refused id carries WHY so the report can distinguish an invalid id from a failed one.
+      { userId: 'bad-id', outcome: 'refused', reason: 'invalid-input' },
     ]);
   });
 });

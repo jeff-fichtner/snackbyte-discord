@@ -67,6 +67,7 @@ export function manageableChannelView(channel: GuildTextBasedChannel): Manageabl
 
 export function pinMessageView(message: Message): PinMessageView {
   return {
+    pinned: message.pinned,
     pin: async () => {
       await message.pin();
     },

@@ -46,8 +46,18 @@ export function guildBanView(guild: Guild): GuildBanView {
       await guild.bans.remove(userId, reason);
     },
     isBanned: async (userId) => {
-      const ban = await guild.bans.fetch(userId).catch(() => null);
-      return ban !== null;
+      // fetch throws Unknown Ban (10026) for a user who simply isn't banned — that is the "false"
+      // signal. Any OTHER error (missing permission, rate-limit, network) is a real failure and
+      // MUST propagate, so the capability reports `failed` rather than misreporting "not banned".
+      try {
+        await guild.bans.fetch(userId);
+        return true;
+      } catch (err) {
+        if (typeof err === 'object' && err !== null && 'code' in err && err.code === 10026) {
+          return false;
+        }
+        throw err;
+      }
     },
     listBans: async (): Promise<BanEntry[]> => {
       const bans = await guild.bans.fetch();

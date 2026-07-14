@@ -162,10 +162,12 @@ export async function listBans(guild: GuildBanView): Promise<BanEntry[]> {
   return guild.listBans();
 }
 
-/** Per-id outcome for a bulk ban. */
+/** Per-id outcome for a bulk ban — carries the refusal reason so an invalid id reads differently
+ * from a failed one in the report. */
 export interface BulkBanResult {
   userId: string;
   outcome: BanListOutcome['outcome'];
+  reason?: 'invalid-input' | 'failed';
 }
 
 /**
@@ -179,7 +181,11 @@ export async function bulkBanUserIds(
   const results: BulkBanResult[] = [];
   for (const userId of userIds) {
     const r = await banUserId(guild, userId, opts);
-    results.push({ userId, outcome: r.outcome });
+    results.push({
+      userId,
+      outcome: r.outcome,
+      ...(r.outcome === 'refused' ? { reason: r.reason } : {}),
+    });
   }
   return results;
 }

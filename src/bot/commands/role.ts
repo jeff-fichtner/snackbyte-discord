@@ -8,33 +8,18 @@
 import {
   SlashCommandBuilder,
   MessageFlags,
-  PermissionFlagsBits,
   type ChatInputCommandInteraction,
   type GuildMember,
   type Role,
 } from 'discord.js';
 import type { SlashCommand } from './types.js';
 import { getContext } from '../../core/context.js';
-import { toggleSelfRole, setMemberRole, type MemberView, type RoleView } from '../members/roles.js';
+import { toggleSelfRole, setMemberRole, type RoleView } from '../members/roles.js';
+import { roleMemberView } from '../members/member-view.js';
 import { isModerator } from '../moderation/standing.js';
 
 function roleView(role: Role): RoleView {
   return { id: role.id, name: role.name, position: role.position };
-}
-
-function memberView(member: GuildMember): MemberView {
-  const me = member.guild.members.me;
-  return {
-    hasRole: (roleId) => member.roles.cache.has(roleId),
-    addRole: async (roleId) => {
-      await member.roles.add(roleId);
-    },
-    removeRole: async (roleId) => {
-      await member.roles.remove(roleId);
-    },
-    botHighestPosition: me?.roles.highest.position ?? 0,
-    botCanManageRoles: me?.permissions.has(PermissionFlagsBits.ManageRoles) ?? false,
-  };
 }
 
 export const roleCommand: SlashCommand = {
@@ -67,7 +52,7 @@ export const roleCommand: SlashCommand = {
     if (isSelf) {
       const whitelist =
         (await getContext()?.repo.listSelfAssignableRoles(interaction.guildId!)) ?? [];
-      const result = await toggleSelfRole(memberView(invokerMember), roleView(role), whitelist);
+      const result = await toggleSelfRole(roleMemberView(invokerMember), roleView(role), whitelist);
       await interaction.editReply({ content: selfMessage(result, role.name) });
       return;
     }
@@ -82,7 +67,7 @@ export const roleCommand: SlashCommand = {
       await interaction.editReply({ content: "That member isn't in this server." });
       return;
     }
-    const result = await setMemberRole(memberView(target), roleView(role), {
+    const result = await setMemberRole(roleMemberView(target), roleView(role), {
       invokerHighestPosition: invokerMember.roles.highest.position,
     });
     await interaction.editReply({

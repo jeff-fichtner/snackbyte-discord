@@ -37,14 +37,15 @@ function pinHandler(pinned: boolean) {
     }
 
     const result = await setMessagePinned(pinMessageView(message), pinned);
-    await interaction.editReply({
-      content:
-        result.outcome === 'done'
-          ? pinned
-            ? 'Message pinned.'
-            : 'Message unpinned.'
-          : `Couldn't ${pinned ? 'pin' : 'unpin'} that message.`,
-    });
+    let content: string;
+    if (result.outcome === 'done') {
+      content = pinned ? 'Message pinned.' : 'Message unpinned.';
+    } else if (result.outcome === 'unchanged') {
+      content = pinned ? 'That message is already pinned.' : "That message isn't pinned.";
+    } else {
+      content = `Couldn't ${pinned ? 'pin' : 'unpin'} that message.`;
+    }
+    await interaction.editReply({ content });
   };
 }
 

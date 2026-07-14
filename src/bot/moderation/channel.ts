@@ -12,7 +12,7 @@ export const BULK_DELETE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 export const MAX_SLOWMODE_SECONDS = 21_600;
 
 export type ChannelOutcome =
-  | { outcome: 'done' }
+  | { outcome: 'done' | 'unchanged' }
   | { outcome: 'refused'; reason: 'invalid-input' | 'unsupported-channel' | 'failed' };
 
 /** Purge reports how many were deleted and how many were skipped as too old to bulk-delete. */
@@ -41,6 +41,8 @@ export interface ManageableChannelView {
 
 /** The minimal message surface for pin/unpin. */
 export interface PinMessageView {
+  /** Whether the message is currently pinned (so an already-in-state call is an idempotent no-op). */
+  pinned: boolean;
   pin(): Promise<void>;
   unpin(): Promise<void>;
 }
@@ -113,11 +115,13 @@ export async function setChannelLock(
   }
 }
 
-/** Pin or unpin a message. */
+/** Pin or unpin a message. Idempotent: pinning an already-pinned message (or unpinning a not-pinned
+ * one) is a no-op success, not a failure. */
 export async function setMessagePinned(
   message: PinMessageView,
   pinned: boolean,
 ): Promise<ChannelOutcome> {
+  if (message.pinned === pinned) return { outcome: 'unchanged' };
   try {
     if (pinned) await message.pin();
     else await message.unpin();

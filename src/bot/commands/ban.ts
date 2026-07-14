@@ -78,6 +78,16 @@ export const banCommand: SlashCommand = {
     const userId = interaction.options.getString('user_id');
     const userIds = interaction.options.getString('user_ids');
 
+    // Exactly one mode must be supplied — refuse (don't silently drop) if two or three are given,
+    // so a moderator is never told "banned" when only part of their intent ran.
+    const modesSupplied = [member, userId, userIds].filter(Boolean).length;
+    if (modesSupplied > 1) {
+      await interaction.editReply({
+        content: 'Supply only one of `member`, `user_id`, or `user_ids` per command.',
+      });
+      return;
+    }
+
     // Present-member ban (hierarchy-guarded).
     if (member) {
       const target = await interaction.guild.members.fetch(member.id).catch(() => null);
@@ -109,7 +119,15 @@ export const banCommand: SlashCommand = {
       }
       const results = await bulkBanUserIds(guild, ids, { reason, deleteMessageSeconds });
       const banned = results.filter((r) => r.outcome === 'banned').length;
-      const lines = results.map((r) => `• \`${r.userId}\` — ${r.outcome}`);
+      const lines = results.map((r) => {
+        const detail =
+          r.outcome === 'refused'
+            ? r.reason === 'invalid-input'
+              ? 'invalid id'
+              : 'failed'
+            : r.outcome;
+        return `• \`${r.userId}\` — ${detail}`;
+      });
       await interaction.editReply({
         content: `Bulk ban: ${banned}/${results.length} newly banned.\n${lines.join('\n')}`,
       });

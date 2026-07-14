@@ -73,6 +73,9 @@ export const timeoutCommand: SlashCommand = {
         durationMs === 0
           ? `Cleared ${target.toString()}'s timeout.`
           : `Timed out ${target.toString()} for ${durationStr}.`;
+    } else if (result.reason === 'invalid-input') {
+      // For a timeout, invalid-input means the duration is out of range (the parse already succeeded).
+      content = 'That duration is out of range — the maximum timeout is 28 days.';
     } else {
       content = sanctionRefusal(result.reason, target.toString());
     }
