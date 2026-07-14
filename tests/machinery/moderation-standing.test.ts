@@ -43,3 +43,40 @@ describe('isModerator — native per-capability permission gate', () => {
     expect(isModerator(nickOnly, 'role')).toBe(false);
   });
 });
+
+describe('isModerator — sanction & channel/message capabilities (006)', () => {
+  it('maps each moderation capability to its native permission', () => {
+    const cases: [Parameters<typeof isModerator>[1], bigint][] = [
+      ['timeout', PermissionFlagsBits.ModerateMembers],
+      ['kick', PermissionFlagsBits.KickMembers],
+      ['ban', PermissionFlagsBits.BanMembers],
+      ['purge', PermissionFlagsBits.ManageMessages],
+      ['pin', PermissionFlagsBits.ManageMessages],
+      ['slowmode', PermissionFlagsBits.ManageChannels],
+      ['lock', PermissionFlagsBits.ManageChannels],
+    ];
+    for (const [capability, permission] of cases) {
+      expect(isModerator(withPermissions(permission), capability)).toBe(true);
+      expect(isModerator(withPermissions(), capability)).toBe(false);
+    }
+  });
+
+  it('is per-capability across permission families (a moderator is not automatically all-powerful)', () => {
+    const kickOnly = withPermissions(PermissionFlagsBits.KickMembers);
+    expect(isModerator(kickOnly, 'kick')).toBe(true);
+    expect(isModerator(kickOnly, 'ban')).toBe(false);
+    expect(isModerator(kickOnly, 'timeout')).toBe(false);
+  });
+
+  it('purge and pin share Manage Messages; slowmode and lock share Manage Channels', () => {
+    const msgs = withPermissions(PermissionFlagsBits.ManageMessages);
+    expect(isModerator(msgs, 'purge')).toBe(true);
+    expect(isModerator(msgs, 'pin')).toBe(true);
+    expect(isModerator(msgs, 'slowmode')).toBe(false);
+
+    const chans = withPermissions(PermissionFlagsBits.ManageChannels);
+    expect(isModerator(chans, 'slowmode')).toBe(true);
+    expect(isModerator(chans, 'lock')).toBe(true);
+    expect(isModerator(chans, 'purge')).toBe(false);
+  });
+});

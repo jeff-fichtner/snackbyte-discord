@@ -9,6 +9,7 @@ import type {
   DeliveryRecordInput,
   SourceRecord,
   ReactionRoleMapping,
+  ComponentRoleBinding,
 } from './repository.js';
 import type { RouteRecord, DeliveryTarget } from '../routing/types.js';
 
@@ -83,6 +84,15 @@ export class PgRepository implements Repository {
       emojiKey: r.emoji_key,
       roleId: r.role_id,
     }));
+  }
+
+  async listComponentRoleBindings(guildId: string): Promise<ComponentRoleBinding[]> {
+    // Read live per activation (no cache) — an operator edit governs the next activation.
+    const { rows } = await this.pool.query(
+      `SELECT component_key, role_id FROM component_role_bindings WHERE guild_id = $1`,
+      [guildId],
+    );
+    return rows.map((r) => ({ componentKey: r.component_key, roleId: r.role_id }));
   }
 
   async alreadyDelivered(routeId: string, dedupeKey: string): Promise<boolean> {

@@ -30,6 +30,7 @@ import { Events } from 'discord.js';
 import './sources/index.js';
 import './routing/transforms/index.js';
 import './bot/commands/index.js';
+import './bot/components/index.js';
 import './bot/events/index.js';
 
 async function main(): Promise<void> {
@@ -74,7 +75,7 @@ async function main(): Promise<void> {
   //    failure is logged, not fatal — the HTTP face stays up.
   if (config.discordBotToken) {
     try {
-      const client = createBotClient();
+      const client = createBotClient({ textPrefixEnabled: config.textPrefixEnabled });
       client.once(Events.ClientReady, (c) => {
         setGatewayConnected(true);
         logger.info({ user: c.user.tag }, 'bot ready');

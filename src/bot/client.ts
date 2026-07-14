@@ -2,25 +2,32 @@
  * The discord.js gateway client.
  *
  * Intents follow least privilege: only what the registered handlers need — Guilds (slash
- * interactions), GuildMembers (observe member-join, resolve members for role/nickname management),
- * and GuildMessageReactions (reaction-roles: grant/remove a role when a member reacts). The
- * Message and Reaction partials let a reaction on a message the bot has not cached this session
- * (an older message, or after a restart) still be resolved — the event carries the message id and
- * emoji without the full cached message.
+ * interactions + components), GuildMembers (observe member-join, resolve members for role/nickname
+ * and moderation), and GuildMessageReactions (reaction-roles). The Message and Reaction partials let
+ * a reaction on a message the bot has not cached this session still be resolved.
  *
- * The privileged Message Content intent is deliberately NOT requested: nothing reads message text
- * (reactions carry the emoji and message id; moderation reads command options), and the bot must
- * boot and function without it. discord.js handles gateway reconnection itself.
+ * The privileged Message Content intent is requested ONLY when the text-prefix style is enabled
+ * (a process-wide opt-in, off by default). With it off — the default — the bot boots and every other
+ * style (slash, reaction, components) works without it; nothing else reads message text (reactions
+ * carry the emoji + message id; moderation reads command options). discord.js handles reconnection.
  */
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 
-export function createBotClient(): Client {
+/**
+ * Build the gateway client. `textPrefixEnabled` (from config) is the one lever that adds the
+ * privileged Message Content intent — when false (default), it is not requested at all.
+ */
+export function createBotClient(opts: { textPrefixEnabled?: boolean } = {}): Client {
+  const intents = [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessageReactions,
+  ];
+  if (opts.textPrefixEnabled) {
+    intents.push(GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent);
+  }
   return new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildMessageReactions,
-    ],
+    intents,
     partials: [Partials.Message, Partials.Reaction],
   });
 }

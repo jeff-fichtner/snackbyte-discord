@@ -37,6 +37,16 @@ export interface ReactionRoleMapping {
   roleId: string;
 }
 
+/**
+ * An operator-curated component→role binding: activating `componentKey` (a button's customId, or a
+ * select's customId plus option value) grants `roleId`. Additive configuration — the role must also
+ * be on the guild's self-assignable whitelist for the component to grant it.
+ */
+export interface ComponentRoleBinding {
+  componentKey: string;
+  roleId: string;
+}
+
 export interface Repository {
   /** Fetch a source row by slug (for enablement + its secret reference), or null. */
   getSourceRecord(slug: string): Promise<SourceRecord | null>;
@@ -48,6 +58,8 @@ export interface Repository {
   listSelfAssignableRoles(guildId: string): Promise<string[]>;
   /** Reaction-role mappings an operator has configured in this guild (empty when none). */
   listReactionRoleMappings(guildId: string): Promise<ReactionRoleMapping[]>;
+  /** Component→role bindings an operator has configured in this guild (empty when none). */
+  listComponentRoleBindings(guildId: string): Promise<ComponentRoleBinding[]>;
   /** True if this (route, event) was already delivered (idempotency pre-check). */
   alreadyDelivered(routeId: string, dedupeKey: string): Promise<boolean>;
   /** Record a delivery attempt outcome; the unique (route_id, dedupe_key) guards dups. */

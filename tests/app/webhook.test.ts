@@ -14,7 +14,11 @@ process.env.CLICKUP_WEBHOOK_SECRET = SECRET;
 import { createApp } from '../../src/server.js';
 import { setContext } from '../../src/core/context.js';
 import '../../src/sources/index.js'; // register the clickup adapter
-import type { Repository, ReactionRoleMapping } from '../../src/db/repository.js';
+import type {
+  Repository,
+  ReactionRoleMapping,
+  ComponentRoleBinding,
+} from '../../src/db/repository.js';
 import type { RouteRecord, DeliveryTarget } from '../../src/routing/types.js';
 import type { DeliveryService } from '../../src/discord/delivery.js';
 
@@ -51,6 +55,9 @@ class FakeRepo implements Repository {
     return [];
   }
   async listReactionRoleMappings(): Promise<ReactionRoleMapping[]> {
+    return [];
+  }
+  async listComponentRoleBindings(): Promise<ComponentRoleBinding[]> {
     return [];
   }
   async ping(): Promise<boolean> {

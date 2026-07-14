@@ -47,7 +47,19 @@ export function loadConfig() {
     discordAppId: optional('DISCORD_APP_ID'),
     discordDevGuildId: optional('DISCORD_DEV_GUILD_ID'),
     databaseUrl: optional('DATABASE_URL'),
+    ...textPrefixConfig(),
   };
+}
+
+/**
+ * The text-prefix interaction style is a process-wide, opt-in choice: it is OFF by default, and
+ * turning it on both activates the style AND requires the privileged Message Content intent (which
+ * the bot then requests). It is enabled by setting TEXT_PREFIX to a non-empty prefix string (e.g.
+ * "!"). Because the Message Content intent is per-connection, this cannot be scoped per guild.
+ */
+export function textPrefixConfig(): { textPrefix: string | undefined; textPrefixEnabled: boolean } {
+  const textPrefix = optional('TEXT_PREFIX');
+  return { textPrefix, textPrefixEnabled: textPrefix !== undefined };
 }
 
 export type AppConfig = ReturnType<typeof loadConfig>;

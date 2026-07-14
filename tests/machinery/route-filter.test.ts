@@ -6,6 +6,7 @@ import type {
   Repository,
   DeliveryRecordInput,
   ReactionRoleMapping,
+  ComponentRoleBinding,
 } from '../../src/db/repository.js';
 import type { RouteRecord, DeliveryTarget } from '../../src/routing/types.js';
 import type { DeliveryService, DiscordMessage } from '../../src/discord/delivery.js';
@@ -74,6 +75,9 @@ class FakeRepo implements Repository {
     return [];
   }
   async listReactionRoleMappings(): Promise<ReactionRoleMapping[]> {
+    return [];
+  }
+  async listComponentRoleBindings(): Promise<ComponentRoleBinding[]> {
     return [];
   }
   async ping(): Promise<boolean> {

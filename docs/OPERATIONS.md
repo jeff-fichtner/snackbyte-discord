@@ -247,6 +247,66 @@ self-service ability. Two hierarchy guards always apply and refuse safely (never
 Moderation reads its target/role/nickname from command options, not message text, so it needs **no**
 new gateway intent and **no** Message Content.
 
+## Moderation commands (sanctions, ban-list, channel/message)
+
+The full stateless moderation surface. Each command is gated by the invoker's **native** Discord
+permission — grant the bot's role only the specific permissions the commands you use require (least
+privilege, never Administrator):
+
+| Command                                                         | Native permission required | What it does                                                                                                             |
+| --------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `/timeout member duration [reason]`                             | Moderate Members           | Time a member out (e.g. `10m`, `2h`, `7d`; `0` clears). Self-expires.                                                    |
+| `/kick member [reason]`                                         | Kick Members               | Remove a member (they can rejoin).                                                                                       |
+| `/ban member \| user_id \| user_ids [reason] [delete_messages]` | Ban Members                | One command: ban a present member, pre-emptively ban a user id, or bulk-ban several ids. Optional 0–7 day message purge. |
+| `/unban user_id [reason]`                                       | Ban Members                | Remove a user id from the ban list.                                                                                      |
+| `/bans`                                                         | Ban Members                | List the current bans (ephemeral).                                                                                       |
+| `/purge count [reason]`                                         | Manage Messages            | Bulk-delete recent messages (1–100). Messages >14 days can't be bulk-deleted and are reported as skipped.                |
+| `/slowmode seconds`                                             | Manage Channels            | Set (or clear with `0`) the channel's slowmode.                                                                          |
+| `/lock` · `/unlock`                                             | Manage Channels            | Deny / allow members sending in the channel.                                                                             |
+| `/pin` · `/unpin` `message_id`                                  | Manage Messages            | Toggle a message's pinned state.                                                                                         |
+
+**Guards** (member sanctions): the bot must outrank the target and hold the permission (bot-position),
+and the target must be below the invoking moderator's own highest role (invoker-position) — a
+moderator can't sanction someone above themselves. Every guard failure is a safe refusal, never a
+half-action. Reasons are recorded in the **platform audit log** (Discord's own) where the action
+supports one — there is **no** bot-side infractions store (that's a later feature).
+
+**No new gateway intent** — sanctions/channel commands add only bot-role _permissions_. Bot role must
+sit above the members/roles it manages.
+
+## Role menus via buttons / select menus
+
+Members can toggle a whitelisted role by clicking an operator-configured button or picking a select
+option — the same result as `/role` or a reaction, reusing the same self-assignable whitelist.
+
+**Configure a binding** (operator): add a row to `component_role_bindings`:
+
+| Column           | Value                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `guild_id`       | the server id                                                                                         |
+| `component_key`  | the button's `customId` (must start with `role:`), or a select's `customId` + `::` + the option value |
+| `component_kind` | `button` or `select`                                                                                  |
+| `role_id`        | the role to toggle (must also be on `self_assignable_roles`)                                          |
+
+Edited live, no redeploy. Authorization is the intersection: a binding grants a role only if the role
+is **also** whitelisted. Buttons need **no** new intent (components arrive on the existing interaction
+gateway). Name components with the `role:` prefix so the bot's role-component handler claims them.
+
+## Text-prefix commands (`!role`, `!roles`, `!nick`) — opt-in, needs Message Content
+
+Off by default. Enabling it turns on the privileged **Message Content** intent for the whole bot (it
+is per-connection — it cannot be scoped per guild), so this is a deliberate deploy choice:
+
+1. Set `TEXT_PREFIX` (e.g. `!`) in the environment — a non-empty value both enables the style and
+   makes the bot request Message Content.
+2. In the Developer Portal, turn ON the **Message Content Intent** for the bot. Redeploy.
+3. `!role <name>`, `!roles`, `!nick [name]` then run the same role/nickname capabilities as the slash
+   commands, with the same whitelist gate.
+
+**When `TEXT_PREFIX` is unset (the default):** the bot does not request Message Content, the
+`messageCreate` handler is a no-op, and every other style (slash, reaction, components) works — full
+least privilege.
+
 ## Networking (how the domains are wired)
 
 All snackbyte apps share one global external HTTPS load balancer (IP `136.110.245.98`) and

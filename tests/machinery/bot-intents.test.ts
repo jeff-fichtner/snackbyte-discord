@@ -24,7 +24,7 @@ describe('bot client intents — least privilege, no Message Content', () => {
     expect(intents.has(GatewayIntentBits.MessageContent)).toBe(false);
   });
 
-  it('requests no intents beyond Guilds + GuildMembers + GuildMessageReactions', () => {
+  it('requests no intents beyond Guilds + GuildMembers + GuildMessageReactions by default', () => {
     const client = createBotClient();
     const intents = new IntentsBitField(client.options.intents);
     const expected = new IntentsBitField([
@@ -39,5 +39,20 @@ describe('bot client intents — least privilege, no Message Content', () => {
     const client = createBotClient();
     expect(client.options.partials).toContain(Partials.Message);
     expect(client.options.partials).toContain(Partials.Reaction);
+  });
+});
+
+describe('bot client intents — text-prefix opt-in adds Message Content, and only then', () => {
+  it('requests GuildMessages + Message Content ONLY when text-prefix is enabled', () => {
+    const off = new IntentsBitField(createBotClient({ textPrefixEnabled: false }).options.intents);
+    expect(off.has(GatewayIntentBits.MessageContent)).toBe(false);
+    expect(off.has(GatewayIntentBits.GuildMessages)).toBe(false);
+
+    const on = new IntentsBitField(createBotClient({ textPrefixEnabled: true }).options.intents);
+    expect(on.has(GatewayIntentBits.MessageContent)).toBe(true);
+    expect(on.has(GatewayIntentBits.GuildMessages)).toBe(true);
+    // The base intents are still present when text-prefix is on.
+    expect(on.has(GatewayIntentBits.Guilds)).toBe(true);
+    expect(on.has(GatewayIntentBits.GuildMessageReactions)).toBe(true);
   });
 });
