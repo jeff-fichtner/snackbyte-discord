@@ -269,8 +269,11 @@ messages do nothing and every other style still works.
   pre-emptive ban-by-id, bulk ban) MUST be exposed as ONE unified `/ban` command whose supplied option
   (`member` / `user_id` / `user_ids`) selects the mode; `unban` and `bans` (list) are separate
   commands.
-- **FR-004**: Every sanction MUST record an optional operator-supplied reason to the server's audit
-  log, so the action is attributable.
+- **FR-004**: Every moderation action MUST forward an optional operator-supplied reason to the
+  platform's audit log wherever the platform accepts one (member sanctions — timeout/kick/ban/unban —
+  and message/channel actions that support an audit reason, e.g. purge/lock), so the action is
+  attributable. Where the platform does not accept a reason for an action, the reason is simply not
+  recorded for it (no failure).
 - **FR-005**: Every member sanction MUST enforce the hierarchy guards before acting: the bot can
   manage the target (target below the bot's highest role, bot holds the required permission) AND the
   target is below the invoking moderator's own highest role. A guard failure MUST be a safe refusal
@@ -426,7 +429,8 @@ architecture**: this feature stops exactly where a capability would need a durab
 - **Warnings / infractions system** — issuing a warning, a persistent per-member infraction history,
   a modlog channel that records every action durably, auto-escalation (e.g. 3 warnings → mute), and
   auto-expiring temp-bans. All require a durable moderation-record store the hub does not yet have.
-  These land **after** the storage work in 007, as their own moderation-records feature.
+  These land as **spec 008** (their own moderation-records feature), built on the 007 storage work —
+  i.e. after 007, not in it.
 - **`bot_state`/kv** — a free-form per-guild key/value config store (the general persistence
   primitive the infractions system and other stateful features will build on). Deferred to 007
   (infrastructure).
