@@ -3,8 +3,17 @@
 # printing the values. Use this to set or rotate secrets on prod or staging.
 #
 # Usage:
-#   ./scripts/set-secrets.sh prod        # reads .env          -> snackbyte-discord
+#   ./scripts/set-secrets.sh prod        # reads .env.prod     -> snackbyte-discord
 #   ./scripts/set-secrets.sh staging     # reads .env.staging  -> snackbyte-discord-staging
+#
+# The three local env files (all gitignored, chmod 600, never committed):
+#   .env         LOCAL DEV — the snackbyte-dev Discord app + the staging database. Loaded by
+#                `npm run dev`, `npm run migrate`, `npm run deploy:commands`. This is the DEFAULT,
+#                so it is deliberately the harmless one: the worst a careless local command can do
+#                is poke dev.
+#   .env.staging pushed to the staging Cloud Run service (same dev app + staging DB).
+#   .env.prod    pushed to the prod Cloud Run service. Prod credentials live ONLY here and in
+#                Cloud Run — never in .env, so no local command defaults to touching prod.
 #
 # It only pushes the app's real secrets/config (not PORT/LOG_LEVEL/build metadata). Missing
 # keys in the env file are skipped (so you can rotate just one by leaving others blank? no —
@@ -21,7 +30,11 @@ REGION="us-central1"
 case "$ENVIRONMENT" in
   prod)
     SERVICE="snackbyte-discord"
-    ENV_FILE=".env"
+    # Prod reads its OWN file, never the plain .env. `.env` is the LOCAL DEV environment (the dev
+    # Discord app + the staging database), so it is the safe default for `npm run dev` and
+    # `deploy:commands`. Pinning prod to .env would make the default local env prod — one careless
+    # command away from registering test commands into a live server or writing to prod's database.
+    ENV_FILE=".env.prod"
     ;;
   staging)
     SERVICE="snackbyte-discord-staging"

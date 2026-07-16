@@ -37,25 +37,39 @@ gcloud run services update snackbyte-discord-staging \
 
 ## Deploying
 
+**Deploys are automatic — the branch selects the environment.** Push and CI does the rest:
+
 ```bash
-# Production (manual): builds from source via Cloud Build, deploys to Cloud Run.
+git push origin dev     # -> tags vX.Y.Z-dev, builds, deploys snackbyte-discord-staging
+git push origin main    # -> tags vX.Y.Z,     builds, deploys snackbyte-discord
+```
+
+The `deploy` job (`.github/workflows/ci-cd.yml`) runs only if the gate passed and a tag was
+produced, authenticates to GCP via Workload Identity Federation (keyless), checks out the
+**tagged** commit, builds via `cloudbuild.yaml`, deploys, and then **verifies the load balancer
+actually reports the new tag** before going green.
+
+Two safety properties worth knowing, both learned the hard way:
+
+- **Env vars are merged, never replaced.** `cloudbuild.yaml` uses `--update-env-vars` (plus an
+  explicit `--remove-env-vars=APP_ENV` on the prod path). `--set-env-vars` would REPLACE the whole
+  environment and delete every runtime secret CI doesn't know about (bot token, `DATABASE_URL`, the
+  signing secrets) — taking the bot offline and 401-ing every webhook.
+- **Prod's `min-instances` is pinned to 1 by the pipeline**, so a deploy can never leave the
+  always-on gateway scaled to zero. Staging omits the flag, preserving its manual 0/1 toggle.
+
+**Manual deploy** (rarely needed — e.g. deploying an uncommitted tree):
+
+```bash
 gcloud run deploy snackbyte-discord --source . \
   --project snackbyte-apps --region us-central1 \
   --allow-unauthenticated --min-instances=1 \
   --ingress=internal-and-cloud-load-balancing
-
-# Staging (manual):
-gcloud run deploy snackbyte-discord-staging --source . \
-  --project snackbyte-apps --region us-central1 \
-  --allow-unauthenticated --min-instances=0 \
-  --ingress=internal-and-cloud-load-balancing \
-  --set-env-vars APP_ENV=staging
 ```
 
-There is also `scripts/deploy.sh <service> <project> <region> [version]` (a thin wrapper for
-a manual prod deploy; it does not set `--min-instances`/`--ingress`, so prefer the explicit
-commands above for this service). The CI `deploy` job is per-app and not yet wired into
-`.github/workflows/ci-cd.yml` — deploys are manual for now.
+⚠️ **Never pass `--set-env-vars` to a manual deploy of this service** — same wipe. Omit it (env is
+preserved) or use `--update-env-vars`. There is also `scripts/deploy.sh` (a thin wrapper that does
+not set `--min-instances`/`--ingress`, so prefer the explicit command above).
 
 Verify a deploy reports the expected commit:
 
@@ -74,14 +88,29 @@ in git**.
 recognized keys to the right service without ever echoing values:
 
 ```bash
-./scripts/set-secrets.sh prod        # reads .env         -> snackbyte-discord
+./scripts/set-secrets.sh prod        # reads .env.prod    -> snackbyte-discord
 ./scripts/set-secrets.sh staging     # reads .env.staging -> snackbyte-discord-staging
 ```
 
-Per-environment isolation: prod reads `.env`, staging reads `.env.staging` (gitignored) — so
-the two environments can hold different bot tokens/apps, databases, etc. To rotate one secret
-(e.g. the Discord bot token after a Reset Token): update its line in the env file, run the
-script for that environment, then check `/api/ready`.
+### The three local env files
+
+All are gitignored (`.env.*`), `chmod 600`, and never committed — they live only on your machine.
+
+| File           | Points at                                            | Loaded by                                                   |
+| -------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| `.env`         | **local dev** — the dev Discord app + the staging DB | `npm run dev`, `npm run migrate`, `npm run deploy:commands` |
+| `.env.staging` | staging Cloud Run (same dev app + staging DB)        | `./scripts/set-secrets.sh staging`                          |
+| `.env.prod`    | **prod only**                                        | `./scripts/set-secrets.sh prod`                             |
+
+**Why `.env` is dev, not prod.** `.env` is what every local command loads by default, so it is
+deliberately the harmless one: the worst a careless `npm run dev` or `deploy:commands` can do is
+poke the dev app and the staging database. Prod credentials live **only** in `.env.prod` and in
+Cloud Run, so no local command defaults to touching production. (Previously `.env` held prod's
+token and DB — meaning `npm run dev` logged in as the prod bot against the prod database, and
+`deploy:commands` registered commands into a live server.)
+
+To rotate a secret (e.g. the Discord bot token after a Reset Token): update its line in the
+relevant env file, run the script for that environment, then check `/api/ready`.
 
 Manual equivalent (if you prefer not to use the script) — note the `^|^` delimiter, needed
 because values like `DATABASE_URL` contain commas/colons:
