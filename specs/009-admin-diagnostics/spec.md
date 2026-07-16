@@ -28,6 +28,14 @@ Q4 decision: when the table editor stops being sufficient and a purpose-built **
 endpoint/UI is warranted. Best done once, spanning all the runtime-data types, rather than a one-off
 command per feature.
 
+## ⚠️ Framing note — this may become "the composer" (ARCHITECTURE §5 Q6)
+
+Decide BEFORE speccing: is this diagnostics-only (Tier 1 — curate the existing rows), or the surface
+where operators **compose command instances** from code-defined types (Tier 2)? The two produce very
+different UIs, and building the diagnostics-only version first risks a throwaway. §5 Q6 argues Tier 2
+is the plausible direction and that the existing capability/adapter split already supports it. Settle
+that question here rather than inheriting it.
+
 ## Key open questions (resolve during `/speckit-specify`)
 
 - In-Discord commands (operator-permission-gated) vs. a web admin endpoint vs. both.

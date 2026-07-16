@@ -146,24 +146,60 @@ unresolved and relevant to later phases.)
      interactions: an operator adds a `reaction_role_mappings` / `component_role_bindings` row and a
      new member-facing interaction exists immediately. Tier 2 is that pattern generalized to
      commands, and it is Principle-I-native (patterns in code, instances in data).
-   - **Tier 3 — author behavior in a UI (a no-code bot builder).** Operators express control flow /
-     arbitrary logic. **Contradicts Principle IV** ("commands MUST live in code — typed, reviewed,
-     tested") and changes the threat model: the bot holds Ban Members, so operator-authored logic is
-     a different security product. Would require a constitution amendment and a sandbox story.
+   - **Tier 2.5 — total rule composition.** Tier 2 plus composing effects (sequence, bounded
+     iteration, conditions). Still constitution-compatible **if and only if the composition language
+     is total** — see the constraints below. This is the plausible long-term shape.
+   - **Tier 3 — author behavior in a UI (a no-code bot builder).** Operators express unbounded logic
+     or reach a portal effect. **Contradicts Principle IV** ("commands MUST live in code — typed,
+     reviewed, tested").
 
-   **The test that separates them** is _totality_, not whether input is typed vs. clicked (a
-   drag-and-drop flow builder with conditionals is still code, just with a graphical syntax): _can
-   the operator's input make the bot do something no engineer enumerated?_ If every input maps to a
-   behavior that exists in reviewed code, it is configuration — a wrong input is a wrong _choice_,
-   never unreviewed logic. If the space is open-ended, it is programming.
+   **The separating test is _totality_**, not typed-vs-clicked (a drag-and-drop flow builder with
+   conditionals is still code, just with a graphical syntax). Ask: _can you answer "what can this bot
+   do?" by reading only the code (plus a bounded read of the rows)?_ If yes it is configuration — a
+   bad row is a wrong _choice_, never unreviewed logic. If you must read the data to know what the
+   bot is capable of, it is programming.
 
-   Today's rows sit on the safe side, though `routes.config.excludeSubtypes` is the closest thing to
-   an interpreted rule language already in the codebase (code evaluates an operator-supplied
-   predicate) — still total, since its only possible effect is suppressing a delivery.
+   **Three INDEPENDENT ways to break out** — any one is sufficient; they are not all about effects:
+   1. **Portal effects.** Discord's API is genuinely finite (~60–100 primitives) and enumerable, so
+      the effect menu itself is not the problem. The danger is escape hatches: **arbitrary HTTP**
+      (the effect set becomes the whole internet — exfiltrate the token, probe internal services),
+      **eval**, **file/env reads**. This is how no-code tools actually get breached.
+   2. **Composition.** Even with a finite, portal-free menu: sequencing turns N effects into Nᵏ
+      chains; **loops turn one click into 5,000 bans** (the effect was on the menu, the _scale_ was
+      not); conditions re-admit arbitrary logic through the condition language (an unbounded regex
+      can hang the process).
+   3. **Triggers.** `/ban` invoked by a moderator is a human judgment call. "Ban anyone matching
+      ⟨pattern⟩" is the _same finite effect_, automated, with no human in the loop. Different product.
 
-   **Status: not committed.** Tier 2 is the plausible, constitution-compatible direction and would
-   likely reshape Q4/009 from "diagnostics" into "the composer." Tier 3 is out unless the
-   constitution changes. Revisit when the admin surface is spec'd.
+   **What keeps Tier 2.5 total** (design against accidental Turing-completeness — total DSLs are a
+   solved problem: CEL, JSONLogic):
+   - bounded iteration only (`for up to N matching`, never `while`) → blast radius is statically knowable
+   - total conditions: a typed predicate DSL over known fields, not regex-with-backtracking, not eval
+   - no portals
+   - an **effect allowlist smaller than the API**: composable = reversible + low blast radius (post a
+     message, toggle a whitelisted role, add a reaction). NOT composable = irreversible + high blast
+     radius (kick/ban/mass-delete) — those stay engineer-written commands a human invokes with
+     judgment. 006 is already this shape, which retroactively justifies it.
+   - a static per-invocation blast limit
+
+   Today's rows sit safely inside Tier 2 (every operator-configurable thing is **single-effect**: a
+   route posts, a reaction toggles one role, a component toggles one role — no sequencing anywhere).
+   `routes.config.excludeSubtypes` is the closest thing to a rule language already present (code
+   evaluates an operator-supplied predicate) — still total, since its only possible effect is
+   suppressing a delivery.
+
+   **Status: not committed, but it shapes two upcoming specs (see 007/009 stubs).** The current
+   capability/adapter split (Principle I) already _is_ the composer's foundation — patterns in code,
+   instances in data — so no existing work needs rework. 006 needs no change: moderation commands are
+   inherently single-instance (you never want five `/ban`s), while the composer applies to an
+   inherently multi-instance class ("post template T to channel C"). They do not overlap.
+
+   **Tier 3 is judged redundant, not merely risky.** For an owner with repo access, `git push` _is_
+   Tier 3 — arbitrary logic, live, gated to one person, **plus** review, types, and tests. A Tier 3 UI
+   would be a strictly worse version of a capability that already exists. A composer's value is
+   proportional to the number of people who _cannot_ ship code; Tier 2 earns its keep even solo (a row
+   beats a deploy for the 50th variation), Tier 3 does not. Skip it permanently unless the operator
+   population changes.
 
 ---
 

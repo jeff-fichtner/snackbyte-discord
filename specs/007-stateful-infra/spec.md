@@ -22,6 +22,14 @@ that reuse the existing single delivery service (e.g. recurring posts, scheduled
 delivery chokepoint and its idempotency/rate-limit guarantees still apply. Scheduled jobs may store
 their schedule + state in the kv layer, so kv is built first.
 
+## ⚠️ Framing note — spec scheduled jobs as a TRIGGER primitive, not a bespoke feature
+
+A schedule is the **trigger axis** of the composer question (ARCHITECTURE §5 Q6) arriving early. If
+this is spec'd as a one-off "cron posts a message" feature it will be rewritten; if it is spec'd as
+**"a trigger fires a code-defined effect"** — where the trigger is one of {slash, reaction, component,
+schedule} and the effect is an engineer-shipped type configured by data — it lays the composer's rails
+for free at no extra cost. Same work, better shape. Resolve this during `/speckit-specify`.
+
 ## Why it's its own spec
 
 It introduces a **new architectural primitive** (durable, general-purpose bot state) that several

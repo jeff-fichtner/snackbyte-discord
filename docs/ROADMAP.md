@@ -87,6 +87,11 @@ triggered by scale or a concrete need, not planned work. Revisit only when the t
 - **Service split (Phase 5)** — split router + bot into two Cloud Run services; only if
   volume/scaling demands it. The seam is pre-drawn (core depends on neither face), so it's two thin
   entrypoints, not a rewrite. Explicitly "known evolution, not committed."
+- **The composer** (ARCHITECTURE §5 Q6) — whether operators compose command instances (and later,
+  total rules) from a UI without a deploy. Not a feature yet, but it **shapes 007 and 009**: spec
+  scheduled jobs as a trigger→effect primitive, and decide whether 009 is diagnostics-only or the
+  composer surface. The existing capability/adapter split already supports it; nothing built needs
+  rework. Tier 3 (arbitrary logic in a UI) is judged redundant — `git push` already is it.
 
 ## Standalone TODO (do independently, sooner)
 
