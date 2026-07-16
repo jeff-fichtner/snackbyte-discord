@@ -131,6 +131,39 @@ unresolved and relevant to later phases.)
 5. **Separate Discord application per environment.** Prod and staging currently can share one bot
    app; cleaner isolation is a distinct app per environment so staging can't post to prod
    channels or collide on command registration.
+6. **Operator-composed commands ("the composer")? — UNDECIDED, exploratory.** Whether operators
+   should be able to create new member-facing commands from a UI, without a deploy. Related to Q4
+   (admin surface) but a bigger question, because it runs at the edge of Principle IV.
+
+   The useful frame is **three tiers**, separated by whether the operator supplies a _value_ or a
+   _behavior_:
+   - **Tier 1 — curate data (planned, aligned).** A UI over the existing runtime rows: routes, the
+     self-assignable whitelist, reaction-role mappings, component bindings; plus inspect/replay
+     `delivery_log`. Replaces the table editor. This is Q4 and needs no new thinking.
+   - **Tier 2 — compose instances of code-defined command _types_ (this question).** An engineer
+     ships a command _pattern_ (e.g. "post template T to channel C on trigger X"); operators then
+     spin up unlimited _instances_ of it as data, no deploy. Note the hub **already does this** for
+     interactions: an operator adds a `reaction_role_mappings` / `component_role_bindings` row and a
+     new member-facing interaction exists immediately. Tier 2 is that pattern generalized to
+     commands, and it is Principle-I-native (patterns in code, instances in data).
+   - **Tier 3 — author behavior in a UI (a no-code bot builder).** Operators express control flow /
+     arbitrary logic. **Contradicts Principle IV** ("commands MUST live in code — typed, reviewed,
+     tested") and changes the threat model: the bot holds Ban Members, so operator-authored logic is
+     a different security product. Would require a constitution amendment and a sandbox story.
+
+   **The test that separates them** is _totality_, not whether input is typed vs. clicked (a
+   drag-and-drop flow builder with conditionals is still code, just with a graphical syntax): _can
+   the operator's input make the bot do something no engineer enumerated?_ If every input maps to a
+   behavior that exists in reviewed code, it is configuration — a wrong input is a wrong _choice_,
+   never unreviewed logic. If the space is open-ended, it is programming.
+
+   Today's rows sit on the safe side, though `routes.config.excludeSubtypes` is the closest thing to
+   an interpreted rule language already in the codebase (code evaluates an operator-supplied
+   predicate) — still total, since its only possible effect is suppressing a delivery.
+
+   **Status: not committed.** Tier 2 is the plausible, constitution-compatible direction and would
+   likely reshape Q4/009 from "diagnostics" into "the composer." Tier 3 is out unless the
+   constitution changes. Revisit when the admin surface is spec'd.
 
 ---
 
