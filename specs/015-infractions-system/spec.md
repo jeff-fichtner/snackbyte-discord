@@ -1,12 +1,12 @@
 # Feature Specification: Moderation Records — Warnings & Infractions System
 
-**Feature Branch**: `008-infractions-system` *(not yet created)*
+**Feature Branch**: `015-infractions-system` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. Run `/speckit-specify` on this to elaborate into a full spec.
 
-**Priority**: P2 — the stateful completion of moderation; valuable but gated on 007.
+**Priority**: P2 — the stateful completion of moderation; valuable but gated on 014.
 
-**Depends on**: **007** (needs the durable per-guild store) and **006** (the stateless sanctions it records/escalates to).
+**Depends on**: **014** (needs the durable per-guild store) and **006** (the stateless sanctions it records/escalates to).
 
 ---
 
@@ -17,7 +17,7 @@ Add a per-member **infraction history**: issue a warning (a record, not a platfo
 member's infraction history, and a **modlog** channel where the bot durably records every moderation
 action (from 006's sanctions and from warnings here). On top of that: **auto-escalation** (e.g. N
 warnings → an automatic timeout/kick per an operator-configured policy) and **auto-expiring
-temp-bans** (a ban that the bot lifts after a duration — needs scheduled jobs from 007). All of this
+temp-bans** (a ban that the bot lifts after a duration — needs scheduled jobs from 014). All of this
 requires a store, which is exactly why it waits for 007.
 
 ## Why it's its own spec
@@ -32,9 +32,9 @@ a coherent moderation-records feature rather than scattered stateful bits grafte
 - Record model: infractions table shape (member, type, moderator, reason, timestamp, expiry).
 - Escalation policy: operator-configured thresholds (runtime data) vs. fixed.
 - Modlog: one channel per guild, configured how (a `discord_targets`-style row? kv?).
-- Temp-ban expiry: a scheduled job (007) that unbans, resilient across restarts.
+- Temp-ban expiry: a scheduled job (014) that unbans, resilient across restarts.
 
 ## Out of scope
 
-The stateless sanctions themselves (in 006) and the kv/scheduler primitive (in 007) — this spec
+The stateless sanctions themselves (in 006) and the kv/scheduler primitive (in 014) — this spec
 consumes both.

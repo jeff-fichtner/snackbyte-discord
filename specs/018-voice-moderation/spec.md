@@ -1,6 +1,6 @@
 # Feature Specification: Voice Moderation
 
-**Feature Branch**: `012-voice-moderation` *(not yet created)*
+**Feature Branch**: `018-voice-moderation` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. Run `/speckit-specify` on this to elaborate into a full spec.
 

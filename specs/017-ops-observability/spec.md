@@ -1,6 +1,6 @@
 # Feature Specification: Ops & Observability
 
-**Feature Branch**: `011-ops-observability` *(not yet created)*
+**Feature Branch**: `017-ops-observability` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. Run `/speckit-specify` on this to elaborate into a full spec.
 
@@ -30,11 +30,11 @@ from being a fragmented one-off.
 ## Key open questions (resolve during `/speckit-specify`)
 
 - Metrics format/endpoint (Prometheus-style `/metrics` vs. structured-log-derived).
-- Retention policy for `delivery_log` (age-based prune job — may reuse 007 scheduled jobs).
+- Retention policy for `delivery_log` (age-based prune job — may reuse 014 scheduled jobs).
 - Alerting channel (post to a Discord channel via the delivery service? external?).
 
 ## Out of scope
 
-The durable outbox (010) and any new capability — this is observability/retention/alerting only. The
+The durable outbox (016) and any new capability — this is observability/retention/alerting only. The
 secret-rotation *runbook* is documentation; the actual one-time rotation of already-exposed tokens is
 tracked separately (ARCHITECTURE's deletion-TODO) and should happen independently, sooner.

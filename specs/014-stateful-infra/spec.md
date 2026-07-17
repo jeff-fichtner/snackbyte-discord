@@ -1,14 +1,14 @@
 # Feature Specification: Stateful Infrastructure — bot_state/kv & Scheduled Jobs
 
-**Feature Branch**: `007-stateful-infra` *(not yet created)*
+**Feature Branch**: `014-stateful-infra` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. Run `/speckit-specify` on this to elaborate into a full spec.
 
-**Priority**: P1 among the remaining work — it unblocks 008 (infractions) and any future stateful feature.
+**Priority**: P1 among the remaining work — it unblocks 015 (infractions) and any future stateful feature.
 
 **Depends on**: nothing new (extends the existing repository/DB layer).
 
-**Unlocks**: 008 (infractions system), and any capability needing durable per-guild state.
+**Unlocks**: 015 (infractions system), and any capability needing durable per-guild state.
 
 ---
 
@@ -34,7 +34,7 @@ for free at no extra cost. Same work, better shape. Resolve this during `/specki
 
 It introduces a **new architectural primitive** (durable, general-purpose bot state) that several
 later features build on. Bundling it into a bot-interaction feature (like 006) would mix a storage
-concern with an interaction concern. Sequenced before 008 because the infractions system needs this
+concern with an interaction concern. Sequenced before 015 because the infractions system needs this
 store.
 
 ## Key open questions (resolve during `/speckit-specify`)
@@ -47,5 +47,5 @@ store.
 
 ## Out of scope
 
-The infractions system itself (008) — this spec provides the store, not the moderation-records
+The infractions system itself (015) — this spec provides the store, not the moderation-records
 feature built on it.

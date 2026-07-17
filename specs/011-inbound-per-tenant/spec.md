@@ -1,6 +1,6 @@
 # Feature Specification: Multiple Secrets Per Source
 
-**Feature Branch**: `013-multi-secret-per-source` *(not yet created)*
+**Feature Branch**: `011-inbound-per-tenant` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. **CONDITIONAL** — build only if the need actually arises. Run `/speckit-specify` when it does.
 

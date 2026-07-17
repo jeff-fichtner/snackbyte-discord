@@ -1,6 +1,6 @@
 # Feature Specification: Durable Delivery Outbox
 
-**Feature Branch**: `010-delivery-outbox` *(not yet created)*
+**Feature Branch**: `016-delivery-outbox` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. Run `/speckit-specify` on this to elaborate into a full spec.
 
@@ -37,5 +37,5 @@ the ARCHITECTURE doc explicitly parks it in Phase 4 as a deliberate later trade-
 
 ## Out of scope
 
-General ops/observability (metrics, alerting, log pruning) — that's 011; this is specifically the
+General ops/observability (metrics, alerting, log pruning) — that's 017; this is specifically the
 durability/outbox mechanism.

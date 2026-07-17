@@ -1,6 +1,6 @@
 # Feature Specification: Admin & Diagnostics Surface
 
-**Feature Branch**: `009-admin-diagnostics` *(not yet created)*
+**Feature Branch**: `009-tenant-identity` *(not yet created)*
 
 **Status**: 🌱 STUB — outline only. Run `/speckit-specify` on this to elaborate into a full spec.
 
