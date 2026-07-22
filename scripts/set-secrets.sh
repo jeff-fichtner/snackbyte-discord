@@ -15,7 +15,8 @@
 #   .env.prod    pushed to the prod Cloud Run service. Prod credentials live ONLY here and in
 #                Cloud Run — never in .env, so no local command defaults to touching prod.
 #
-# It only pushes the app's real secrets/config (not PORT/LOG_LEVEL/build metadata). Missing
+# It only pushes the app's config/secrets, LOG_LEVEL included — not PORT (Cloud Run injects it)
+# or the build metadata cloudbuild.yaml sets (NODE_ENV/APP_VERSION/BUILD_*/APP_ENV). Missing
 # keys in the env file are skipped (so you can rotate just one by leaving others blank? no —
 # blank means "set empty", so only include keys you intend to set). Values are never echoed;
 # the script reports which KEYS it set.

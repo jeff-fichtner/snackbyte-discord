@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1",
+  "feature": "006-bot-depth-completion",
+  "workspaceId": "90141363864",
+  "spaceId": "90146179804",
+  "listId": "901417496906",
+  "statusMapping": {
+    "not-started": "backlog",
+    "in-progress": "in development",
+    "done": "shipped"
+  },
+  "card": {
+    "id": "86bb1nk6q",
+    "hash": "sha256:5cdbc8aa49b9fb3b76b1f3337545b0fdf7b93b1404f36d68c80ee9a91913ca0e"
+  },
+  "userStories": [
+    {
+      "us": "US1",
+      "id": "86bb1nka3",
+      "hash": "sha256:7b7fac740843c3fff2c8e9ba88b681e4f08b34cb0517a32f1460273dac91989c",
+      "dependsOn": []
+    },
+    {
+      "us": "US2",
+      "id": "86bb1nkag",
+      "hash": "sha256:c1f5cd04c4faa8fdeb3b5ff9ee86466d1a6073ba0ee5b61ea7f0dfd1a60e9c2b",
+      "dependsOn": [
+        "US1"
+      ]
+    },
+    {
+      "us": "US3",
+      "id": "86bb1nkbd",
+      "hash": "sha256:76af91ae64898c74e701232d15e3756a2f31ec753207cc0c48c345e050a275dd",
+      "dependsOn": [
+        "US1",
+        "US2"
+      ]
+    },
+    {
+      "us": "US4",
+      "id": "86bb1nkc6",
+      "hash": "sha256:ff03c13bfc69cc04bd5b8e4f12439d6d43504f742e0c8145759b5ad5674bb592",
+      "dependsOn": [
+        "US1",
+        "US2",
+        "US3"
+      ]
+    },
+    {
+      "us": "US5",
+      "id": "86bb1nkdp",
+      "hash": "sha256:da82d730302ac6bb48709788bb69beadf554fc3949170bf3055b174a0cba379e",
+      "dependsOn": [
+        "US1",
+        "US2",
+        "US3",
+        "US4"
+      ]
+    },
+    {
+      "us": "US6",
+      "id": "86bb1nkee",
+      "hash": "sha256:5591b59a7deed6ca534444193549f88c1f723afadb11526f5037d101f590dab0",
+      "dependsOn": [
+        "US1",
+        "US2",
+        "US3",
+        "US4",
+        "US5"
+      ]
+    }
+  ]
+}
