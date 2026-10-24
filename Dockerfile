@@ -1,6 +1,6 @@
 # Container that builds the app and serves it. What the app is (static or server) is
 # baked into its source, so no build-time mode flag is needed.
-FROM node:24-slim AS build
+FROM node:24.22.1-slim AS build
 WORKDIR /app
 
 # Install ALL deps (incl. the build toolchain) first. NODE_ENV must NOT be production
@@ -25,7 +25,7 @@ RUN CI=true NODE_ENV=production APP_IS_PRODUCTION=${APP_IS_PRODUCTION} APP_VERSI
     BUILD_GIT_COMMIT=${BUILD_GIT_COMMIT} BUILD_DATE=${BUILD_DATE} \
     npm run build
 
-FROM node:24-slim AS runtime
+FROM node:24.22.1-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
